@@ -1,0 +1,1631 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>深淵符文：終焉高塔 Ultimate++</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+user-select:none;
+}
+
+body{
+background:#05070d;
+color:#e6ffe6;
+font-family:"Segoe UI","Noto Sans TC",sans-serif;
+overflow:hidden;
+}
+
+.wrap{
+display:grid;
+grid-template-columns:280px 1fr 320px;
+height:100vh;
+}
+
+.panel{
+padding:12px;
+overflow-y:auto;
+border-right:1px solid #133;
+}
+
+h2,h3{
+margin:8px 0;
+}
+
+.stat{
+margin:6px 0;
+font-size:15px;
+}
+
+.btn{
+background:#2dff7a;
+border:none;
+padding:8px 14px;
+border-radius:14px;
+font-weight:bold;
+cursor:pointer;
+margin:4px;
+transition:.15s;
+}
+
+.btn:hover{
+transform:scale(1.04);
+background:#8cffb3;
+color:#000;
+}
+
+.card{
+width:130px;
+min-height:180px;
+background:#111827;
+border:2px solid #3bff95;
+border-radius:14px;
+padding:10px;
+cursor:pointer;
+transition:.15s;
+display:flex;
+flex-direction:column;
+justify-content:space-between;
+position:relative;
+overflow:hidden;
+}
+
+.card:hover{
+transform:translateY(-4px);
+background:#1a2436;
+}
+
+.card.common{
+border-color:#9ca3af;
+}
+
+.card.rare{
+border-color:#3b82f6;
+box-shadow:0 0 12px #2563eb66;
+}
+
+.card.epic{
+border-color:#c026d3;
+box-shadow:0 0 12px #d946ef88;
+}
+
+.card.legend{
+border-color:#facc15;
+box-shadow:0 0 16px #facc1588;
+}
+
+.hand{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+margin-top:10px;
+}
+
+.energy{
+position:absolute;
+top:6px;
+right:8px;
+background:#2dff7a;
+color:#000;
+width:28px;
+height:28px;
+border-radius:50%;
+display:flex;
+align-items:center;
+justify-content:center;
+font-weight:bold;
+}
+
+.enemy{
+background:#220b0b;
+border:2px solid #ff5a5a;
+padding:16px;
+border-radius:16px;
+margin-top:14px;
+position:relative;
+}
+
+.enemy.damage{
+animation:shake .25s;
+}
+
+@keyframes shake{
+0%{transform:translateX(0)}
+25%{transform:translateX(-6px)}
+50%{transform:translateX(6px)}
+75%{transform:translateX(-4px)}
+100%{transform:translateX(0)}
+}
+
+.node{
+padding:14px;
+border-radius:12px;
+background:#121827;
+border:1px solid #355;
+cursor:pointer;
+width:110px;
+text-align:center;
+transition:.15s;
+font-weight:bold;
+}
+
+.node:hover{
+background:#1c2940;
+transform:scale(1.03);
+}
+
+.node.done{
+opacity:.4;
+}
+
+.map{
+display:flex;
+flex-wrap:wrap;
+gap:10px;
+margin-top:10px;
+}
+
+.log{
+background:#03080f;
+border-radius:12px;
+padding:10px;
+height:90%;
+overflow-y:auto;
+font-size:13px;
+}
+
+.log div{
+padding:5px 0;
+border-bottom:1px solid #122;
+}
+
+.relic{
+padding:8px;
+margin:5px 0;
+background:#1d1730;
+border-radius:10px;
+border:1px solid #7550ff;
+font-size:13px;
+}
+
+.modal{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.72);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:999;
+}
+
+.modal-content{
+background:#111827;
+padding:20px;
+border-radius:20px;
+width:700px;
+max-width:95%;
+max-height:90vh;
+overflow:auto;
+border:2px solid #2dff7a;
+}
+
+.shop-grid{
+display:flex;
+flex-wrap:wrap;
+gap:12px;
+margin-top:12px;
+}
+
+.reward-grid{
+display:flex;
+gap:12px;
+flex-wrap:wrap;
+margin-top:14px;
+}
+
+.badge{
+display:inline-block;
+padding:3px 8px;
+border-radius:999px;
+background:#1f2937;
+margin-right:4px;
+font-size:12px;
+}
+
+.small{
+font-size:12px;
+opacity:.82;
+}
+
+.boss{
+color:#ffb347;
+}
+
+.poison{
+color:#7cff7c;
+}
+
+.vul{
+color:#ff9898;
+}
+
+.hpbar{
+height:18px;
+background:#111;
+border-radius:999px;
+overflow:hidden;
+margin-top:6px;
+}
+
+.hpfill{
+height:100%;
+background:linear-gradient(90deg,#ff4b4b,#ff9090);
+}
+
+.playerhp{
+background:linear-gradient(90deg,#2dff7a,#85ffb0);
+}
+
+.toprow{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="wrap">
+
+<!-- LEFT -->
+<div class="panel">
+
+<h2>🧍 英雄</h2>
+
+<div class="stat">❤️ HP：<span id="hp"></span>/<span id="maxHp"></span></div>
+<div class="hpbar">
+<div id="playerHpFill" class="hpfill playerhp"></div>
+</div>
+
+<div class="stat">⚡ 能量：<span id="energy"></span>/<span id="maxEnergy"></span></div>
+<div class="stat">🛡️ 護甲：<span id="block"></span></div>
+<div class="stat">💰 魂石：<span id="gold"></span></div>
+<div class="stat">🏔️ 樓層：<span id="floor"></span></div>
+
+<div class="stat">☠️ 中毒：<span id="poison"></span></div>
+<div class="stat">💪 力量：<span id="strength"></span></div>
+
+<h3>🎭 職業</h3>
+
+<div class="toprow">
+<button class="btn" onclick="setJob('warrior')">⚔️ 戰士</button>
+<button class="btn" onclick="setJob('mage')">🔮 法師</button>
+<button class="btn" onclick="setJob('assassin')">🗡️ 刺客</button>
+</div>
+
+<div id="jobInfo" class="small"></div>
+
+<h3>📦 牌組</h3>
+
+<div class="stat">抽牌堆：<span id="deckCount"></span></div>
+<div class="stat">棄牌堆：<span id="discardCount"></span></div>
+
+<button class="btn" onclick="openDeckView()">查看牌組</button>
+
+<h3>🧿 遺物</h3>
+
+<div id="relics"></div>
+
+<div style="margin-top:12px">
+<button class="btn" onclick="endTurn()">🔁 結束回合</button>
+<button class="btn" onclick="saveGame()">💾 存檔</button>
+<button class="btn" onclick="loadGame()">📀 讀檔</button>
+</div>
+
+</div>
+
+<!-- CENTER -->
+<div class="panel">
+
+<h2>🗺️ 深淵地圖</h2>
+
+<div id="map" class="map"></div>
+
+<h2 style="margin-top:18px">👾 敵人</h2>
+
+<div id="enemyArea"></div>
+
+<h2 style="margin-top:18px">🎴 手牌</h2>
+
+<div id="hand" class="hand"></div>
+
+</div>
+
+<!-- RIGHT -->
+<div class="panel">
+
+<h2>📜 冒險日誌</h2>
+
+<div id="log" class="log"></div>
+
+</div>
+
+</div>
+
+<!-- SHOP -->
+<div class="modal" id="shopModal">
+<div class="modal-content">
+
+<h2>🛒 商店</h2>
+
+<div>魂石：<span id="shopGold"></span></div>
+
+<div id="shopCards" class="shop-grid"></div>
+
+<div style="margin-top:18px">
+
+<button class="btn" onclick="healShop()">❤️ 回復30HP（25）</button>
+<button class="btn" onclick="removeCardShop()">🗑️ 刪除卡牌（35）</button>
+<button class="btn" onclick="closeShop()">離開商店</button>
+
+</div>
+
+</div>
+</div>
+
+<!-- REWARD -->
+<div class="modal" id="rewardModal">
+<div class="modal-content">
+
+<h2>🎁 選擇一張卡牌</h2>
+
+<div id="rewardCards" class="reward-grid"></div>
+
+</div>
+</div>
+
+<!-- DECK VIEW -->
+<div class="modal" id="deckModal">
+<div class="modal-content">
+
+<h2>📚 牌組</h2>
+
+<div id="deckView" class="reward-grid"></div>
+
+<button class="btn" onclick="closeDeckView()">關閉</button>
+
+</div>
+</div>
+
+<script>
+
+const cardPool = [
+
+{
+name:"打擊",
+type:"atk",
+dmg:6,
+cost:1,
+rarity:"common",
+desc:"造成6傷害"
+},
+
+{
+name:"防禦",
+type:"block",
+block:6,
+cost:1,
+rarity:"common",
+desc:"獲得6護甲"
+},
+
+{
+name:"重擊",
+type:"atk",
+dmg:14,
+cost:2,
+rarity:"rare",
+desc:"造成14傷害"
+},
+
+{
+name:"毒刃",
+type:"poison",
+dmg:5,
+poison:3,
+cost:1,
+rarity:"rare",
+desc:"造成5傷害並施加3中毒"
+},
+
+{
+name:"雙連擊",
+type:"multi",
+hits:2,
+dmg:5,
+cost:1,
+rarity:"rare",
+desc:"攻擊2次"
+},
+
+{
+name:"集中",
+type:"energy",
+gain:1,
+draw:1,
+cost:0,
+rarity:"rare",
+once:true,
+desc:"+1能量 抽1張"
+},
+
+{
+name:"鐵壁",
+type:"block",
+block:16,
+cost:2,
+rarity:"rare",
+desc:"獲得16護甲"
+},
+
+{
+name:"破甲",
+type:"vul",
+vulnerable:2,
+cost:1,
+rarity:"epic",
+desc:"施加2層易傷"
+},
+
+{
+name:"狂怒",
+type:"buff",
+strength:2,
+cost:1,
+rarity:"epic",
+desc:"獲得2力量"
+},
+
+{
+name:"風暴斬",
+type:"multi",
+hits:4,
+dmg:4,
+cost:2,
+rarity:"epic",
+desc:"攻擊4次"
+},
+
+{
+name:"終焉",
+type:"atk",
+dmg:36,
+cost:3,
+rarity:"legend",
+desc:"造成36傷害"
+}
+
+];
+
+const relicPool = [
+
+{
+name:"毒蛇雕像",
+desc:"每回合開始時對敵人施加1中毒",
+effect(){
+if(state.enemy){
+state.enemy.poison += 1;
+log("🐍 毒蛇雕像施加1中毒");
+}
+}
+},
+
+{
+name:"鮮血戒指",
+desc:"攻擊後恢復2生命",
+effect(type){
+if(type==="attack"){
+heal(2);
+}
+}
+},
+
+{
+name:"魔力核心",
+desc:"每場戰鬥開始時 +1 最大能量",
+battleStart(){
+state.energy += 1;
+}
+},
+
+{
+name:"尖刺護甲",
+desc:"被攻擊時反傷20%",
+effect(type,dmg){
+if(type==="hit" && state.enemy){
+let thorns = Math.max(1,Math.floor(dmg*.2));
+state.enemy.hp -= thorns;
+log(`🩸 尖刺護甲反傷 ${thorns}`);
+}
+}
+},
+
+{
+name:"遠古卷軸",
+desc:"每回合額外抽1張牌",
+turnStart(){
+draw(1);
+}
+}
+
+];
+
+let state = {
+
+hp:80,
+maxHp:80,
+
+energy:3,
+maxEnergy:3,
+
+block:0,
+gold:60,
+floor:1,
+
+job:"warrior",
+
+strength:0,
+poison:0,
+
+deck:[],
+hand:[],
+discard:[],
+
+enemy:null,
+map:[],
+
+relics:[],
+
+inBattle:false,
+
+usedOnceCards:[],
+
+};
+
+function getInitialDeck(){
+
+let deck=[];
+
+for(let i=0;i<5;i++){
+deck.push(copyCard("打擊"));
+}
+
+for(let i=0;i<5;i++){
+deck.push(copyCard("防禦"));
+}
+
+if(state.job==="mage"){
+deck.push(copyCard("集中"));
+}
+
+if(state.job==="assassin"){
+deck.push(copyCard("毒刃"));
+}
+
+return shuffle(deck);
+
+}
+
+function copyCard(name){
+
+const c=cardPool.find(x=>x.name===name);
+return JSON.parse(JSON.stringify(c));
+
+}
+
+function shuffle(arr){
+
+let a=[...arr];
+
+for(let i=a.length-1;i>0;i--){
+
+let j=Math.floor(Math.random()*(i+1));
+[a[i],a[j]]=[a[j],a[i]];
+
+}
+
+return a;
+
+}
+
+function log(text){
+
+const div=document.createElement("div");
+div.innerHTML=text;
+
+const area=document.getElementById("log");
+
+area.prepend(div);
+
+while(area.children.length>80){
+area.removeChild(area.lastChild);
+}
+
+}
+
+function heal(v){
+
+state.hp=Math.min(state.maxHp,state.hp+v);
+
+}
+
+function setJob(job){
+
+state.job=job;
+
+state.maxHp=80;
+state.maxEnergy=3;
+
+if(job==="warrior"){
+state.maxHp=100;
+}
+
+if(job==="mage"){
+state.maxEnergy=4;
+}
+
+state.hp=state.maxHp;
+state.energy=state.maxEnergy;
+
+state.block=0;
+state.strength=0;
+state.poison=0;
+
+state.relics=[];
+
+state.deck=getInitialDeck();
+state.hand=[];
+state.discard=[];
+
+generateMap();
+
+render();
+
+log(`🎭 選擇職業：${job}`);
+
+}
+
+function generateMap(){
+
+state.map=[];
+
+const types=[
+"戰鬥",
+"戰鬥",
+"精英",
+"休息",
+"寶箱",
+"商店"
+];
+
+for(let i=0;i<6;i++){
+
+let type=types[Math.floor(Math.random()*types.length)];
+
+state.map.push({
+type,
+done:false
+});
+
+}
+
+if(state.floor%5===0){
+
+const idx=Math.floor(Math.random()*state.map.length);
+
+state.map[idx]={
+type:"Boss",
+done:false
+};
+
+}
+
+}
+
+function enterNode(i){
+
+const node=state.map[i];
+
+if(node.done)return;
+
+node.done=true;
+
+switch(node.type){
+
+case "戰鬥":
+spawnEnemy("normal");
+break;
+
+case "精英":
+spawnEnemy("elite");
+break;
+
+case "Boss":
+spawnEnemy("boss");
+break;
+
+case "休息":
+
+heal(Math.floor(state.maxHp*.4));
+
+log("🔥 休息恢復生命");
+
+break;
+
+case "寶箱":
+
+let gold=40+Math.floor(Math.random()*50);
+
+state.gold+=gold;
+
+log(`💰 寶箱獲得 ${gold} 魂石`);
+
+if(Math.random()<.55){
+gainRelic();
+}
+
+break;
+
+case "商店":
+
+openShop();
+
+break;
+
+}
+
+render();
+
+}
+
+function spawnEnemy(rank){
+
+state.inBattle=true;
+
+let hp=40+state.floor*8;
+let atk=6+state.floor;
+
+if(rank==="elite"){
+hp*=1.8;
+atk*=1.5;
+}
+
+if(rank==="boss"){
+hp*=3;
+atk*=2.2;
+}
+
+state.enemy={
+
+name:
+rank==="boss"
+?"終焉魔王"
+:rank==="elite"
+?"深淵精英"
+:"深淵怪物",
+
+rank,
+
+hp:Math.floor(hp),
+maxHp:Math.floor(hp),
+
+atk:Math.floor(atk),
+
+poison:0,
+vulnerable:0,
+
+rage:false
+
+};
+
+state.hand=[];
+state.discard=[];
+
+state.deck=shuffle(state.deck);
+
+state.usedOnceCards=[];
+
+for(let r of state.relics){
+if(r.battleStart) r.battleStart();
+}
+
+log(`⚔️ 遭遇 ${state.enemy.name}`);
+
+startTurn();
+
+}
+
+function draw(n){
+
+for(let i=0;i<n;i++){
+
+if(state.deck.length===0){
+
+if(state.discard.length===0) break;
+
+state.deck=shuffle(state.discard);
+state.discard=[];
+
+log("🔄 洗牌");
+
+}
+
+if(state.deck.length){
+state.hand.push(state.deck.shift());
+}
+
+}
+
+}
+
+function startTurn(){
+
+if(!state.enemy)return;
+
+state.energy=state.maxEnergy;
+state.block=0;
+
+if(state.job==="mage"){
+draw(6);
+}else{
+draw(5);
+}
+
+for(let r of state.relics){
+if(r.turnStart) r.turnStart();
+}
+
+for(let r of state.relics){
+if(r.effect) r.effect();
+}
+
+if(state.poison>0){
+
+state.hp-=state.poison;
+
+log(`☠️ 中毒造成 ${state.poison}`);
+
+state.poison--;
+
+if(state.hp<=0){
+die();
+return;
+}
+
+}
+
+render();
+
+}
+
+function playCard(i){
+
+if(!state.enemy)return;
+
+const card=state.hand[i];
+
+if(!card)return;
+
+if(state.energy<card.cost){
+log("⚡ 能量不足");
+return;
+}
+
+if(card.once && state.usedOnceCards.includes(card.name)){
+log("❌ 此卡本回合已使用");
+return;
+}
+
+state.energy-=card.cost;
+
+state.hand.splice(i,1);
+
+if(card.once){
+state.usedOnceCards.push(card.name);
+}
+
+switch(card.type){
+
+case "atk":
+
+dealDamage(card.dmg+state.strength);
+
+break;
+
+case "block":
+
+state.block+=card.block;
+
+log(`🛡️ 獲得 ${card.block} 護甲`);
+
+break;
+
+case "poison":
+
+dealDamage(card.dmg);
+
+state.enemy.poison+=card.poison;
+
+log(`☠️ 敵人中毒 ${card.poison}`);
+
+break;
+
+case "multi":
+
+for(let x=0;x<card.hits;x++){
+dealDamage(card.dmg+state.strength);
+}
+
+break;
+
+case "energy":
+
+state.energy+=card.gain;
+
+draw(card.draw);
+
+log(`⚡ +${card.gain} 能量`);
+
+break;
+
+case "vul":
+
+state.enemy.vulnerable+=card.vulnerable;
+
+log(`💥 敵人易傷 ${card.vulnerable}`);
+
+break;
+
+case "buff":
+
+state.strength+=card.strength;
+
+log(`💪 力量 +${card.strength}`);
+
+break;
+
+}
+
+state.discard.push(card);
+
+if(state.enemy && state.enemy.hp<=0){
+
+victory();
+return;
+
+}
+
+render();
+
+}
+
+function dealDamage(dmg){
+
+if(state.job==="assassin" && Math.random()<.2){
+
+dmg=Math.floor(dmg*1.5);
+
+log("🗡️ 暴擊！");
+
+}
+
+if(state.enemy.vulnerable>0){
+
+dmg=Math.floor(dmg*1.5);
+
+}
+
+state.enemy.hp-=dmg;
+
+log(`⚔️ 造成 ${dmg} 傷害`);
+
+for(let r of state.relics){
+if(r.effect){
+r.effect("attack");
+}
+}
+
+const enemyDiv=document.getElementById("enemyBox");
+
+if(enemyDiv){
+
+enemyDiv.classList.add("damage");
+
+setTimeout(()=>{
+enemyDiv.classList.remove("damage");
+},180);
+
+}
+
+}
+
+function endTurn(){
+
+if(!state.enemy)return;
+
+while(state.hand.length){
+
+state.discard.push(state.hand.pop());
+
+}
+
+enemyTurn();
+
+}
+
+function enemyTurn(){
+
+if(!state.enemy)return;
+
+if(state.enemy.poison>0){
+
+state.enemy.hp-=state.enemy.poison;
+
+log(`☠️ 敵人中毒 ${state.enemy.poison}`);
+
+state.enemy.poison--;
+
+if(state.enemy.hp<=0){
+
+victory();
+return;
+
+}
+
+}
+
+if(
+state.enemy.rank==="boss"
+&&
+state.enemy.hp<state.enemy.maxHp*.5
+&&
+!state.enemy.rage
+){
+
+state.enemy.rage=true;
+state.enemy.atk+=8;
+
+log("🔥 Boss 狂暴化！");
+
+}
+
+let dmg=state.enemy.atk;
+
+if(state.enemy.vulnerable>0){
+state.enemy.vulnerable--;
+}
+
+dmg=Math.max(0,dmg-state.block);
+
+state.hp-=dmg;
+
+log(`👾 敵人造成 ${dmg} 傷害`);
+
+for(let r of state.relics){
+if(r.effect){
+r.effect("hit",dmg);
+}
+}
+
+if(state.hp<=0){
+
+die();
+return;
+
+}
+
+startTurn();
+
+}
+
+function victory(){
+
+state.inBattle=false;
+
+let rewardGold=25+state.floor*5;
+
+if(state.enemy.rank==="elite"){
+rewardGold*=2;
+}
+
+if(state.enemy.rank==="boss"){
+rewardGold*=4;
+}
+
+state.gold+=rewardGold;
+
+log(`🏆 勝利！獲得 ${rewardGold} 魂石`);
+
+if(
+state.enemy.rank==="elite"
+||
+state.enemy.rank==="boss"
+||
+Math.random()<.45
+){
+gainRelic();
+}
+
+showCardReward();
+
+state.enemy=null;
+
+state.floor++;
+
+generateMap();
+
+render();
+
+}
+
+function gainRelic(){
+
+const choices=relicPool.filter(r=>
+!state.relics.find(x=>x.name===r.name)
+);
+
+if(!choices.length)return;
+
+const relic=JSON.parse(JSON.stringify(
+choices[Math.floor(Math.random()*choices.length)]
+));
+
+state.relics.push(relic);
+
+log(`🧿 獲得遺物：${relic.name}`);
+
+}
+
+function showCardReward(){
+
+const modal=document.getElementById("rewardModal");
+const area=document.getElementById("rewardCards");
+
+area.innerHTML="";
+
+let rewards=[];
+
+for(let i=0;i<3;i++){
+
+let rarityRoll=Math.random();
+
+let pool;
+
+if(rarityRoll<.6){
+pool=cardPool.filter(c=>c.rarity==="common");
+}
+else if(rarityRoll<.9){
+pool=cardPool.filter(c=>c.rarity==="rare");
+}
+else{
+pool=cardPool.filter(c=>c.rarity==="epic"||c.rarity==="legend");
+}
+
+const card=JSON.parse(JSON.stringify(
+pool[Math.floor(Math.random()*pool.length)]
+));
+
+rewards.push(card);
+
+}
+
+rewards.forEach(card=>{
+
+const div=document.createElement("div");
+
+div.className=`card ${card.rarity}`;
+
+div.innerHTML=cardHtml(card);
+
+div.onclick=()=>{
+
+state.deck.push(card);
+
+log(`🎴 獲得卡牌：${card.name}`);
+
+modal.style.display="none";
+
+render();
+
+};
+
+area.appendChild(div);
+
+});
+
+modal.style.display="flex";
+
+}
+
+function cardHtml(card){
+
+return `
+<div class="energy">${card.cost}</div>
+
+<div>
+
+<div style="font-size:18px;font-weight:bold">
+${card.name}
+</div>
+
+<div class="small">
+${rarityText(card.rarity)}
+</div>
+
+</div>
+
+<div>
+
+<div style="margin-top:10px">
+${card.desc}
+</div>
+
+</div>
+`;
+
+}
+
+function rarityText(r){
+
+if(r==="common") return "普通";
+if(r==="rare") return "稀有";
+if(r==="epic") return "史詩";
+if(r==="legend") return "傳說";
+
+return "";
+
+}
+
+function die(){
+
+log("💀 你死亡了");
+
+state.floor=1;
+state.gold=60;
+
+setJob(state.job);
+
+}
+
+function openShop(){
+
+const modal=document.getElementById("shopModal");
+
+modal.style.display="flex";
+
+document.getElementById("shopGold").innerText=state.gold;
+
+const area=document.getElementById("shopCards");
+
+area.innerHTML="";
+
+for(let i=0;i<3;i++){
+
+let card=JSON.parse(JSON.stringify(
+cardPool[Math.floor(Math.random()*cardPool.length)]
+));
+
+const div=document.createElement("div");
+
+div.className=`card ${card.rarity}`;
+
+div.innerHTML=cardHtml(card)+`
+<div style="margin-top:10px">
+<button class="btn">購買 ${30+card.cost*10}</button>
+</div>
+`;
+
+div.onclick=()=>{
+
+let cost=30+card.cost*10;
+
+if(state.gold<cost){
+
+log("💰 魂石不足");
+return;
+
+}
+
+state.gold-=cost;
+
+state.deck.push(card);
+
+log(`🛒 購買 ${card.name}`);
+
+openShop();
+render();
+
+};
+
+area.appendChild(div);
+
+}
+
+}
+
+function closeShop(){
+
+document.getElementById("shopModal").style.display="none";
+
+}
+
+function healShop(){
+
+if(state.gold<25){
+log("💰 魂石不足");
+return;
+}
+
+state.gold-=25;
+
+heal(30);
+
+log("❤️ 回復30HP");
+
+render();
+
+openShop();
+
+}
+
+function removeCardShop(){
+
+if(state.gold<35){
+log("💰 魂石不足");
+return;
+}
+
+if(state.deck.length<=5){
+log("❌ 牌太少");
+return;
+}
+
+state.gold-=35;
+
+openDeckRemove();
+
+}
+
+function openDeckRemove(){
+
+const modal=document.getElementById("deckModal");
+
+modal.style.display="flex";
+
+const area=document.getElementById("deckView");
+
+area.innerHTML="";
+
+state.deck.forEach((card,idx)=>{
+
+const div=document.createElement("div");
+
+div.className=`card ${card.rarity}`;
+
+div.innerHTML=cardHtml(card);
+
+div.onclick=()=>{
+
+log(`🗑️ 移除 ${card.name}`);
+
+state.deck.splice(idx,1);
+
+closeDeckView();
+
+openShop();
+
+render();
+
+};
+
+area.appendChild(div);
+
+});
+
+}
+
+function openDeckView(){
+
+const modal=document.getElementById("deckModal");
+
+modal.style.display="flex";
+
+const area=document.getElementById("deckView");
+
+area.innerHTML="";
+
+state.deck.forEach(card=>{
+
+const div=document.createElement("div");
+
+div.className=`card ${card.rarity}`;
+
+div.innerHTML=cardHtml(card);
+
+area.appendChild(div);
+
+});
+
+}
+
+function closeDeckView(){
+
+document.getElementById("deckModal").style.display="none";
+
+}
+
+function render(){
+
+document.getElementById("hp").innerText=state.hp;
+document.getElementById("maxHp").innerText=state.maxHp;
+
+document.getElementById("energy").innerText=state.energy;
+document.getElementById("maxEnergy").innerText=state.maxEnergy;
+
+document.getElementById("block").innerText=state.block;
+document.getElementById("gold").innerText=state.gold;
+document.getElementById("floor").innerText=state.floor;
+
+document.getElementById("poison").innerText=state.poison;
+document.getElementById("strength").innerText=state.strength;
+
+document.getElementById("deckCount").innerText=state.deck.length;
+document.getElementById("discardCount").innerText=state.discard.length;
+
+document.getElementById("jobInfo").innerText=
+state.job==="warrior"
+?"戰士：+20最大生命"
+:state.job==="mage"
+?"法師：+1能量，每回合抽6張"
+:"刺客：20%暴擊";
+
+document.getElementById("playerHpFill").style.width=
+(state.hp/state.maxHp*100)+"%";
+
+let handHtml="";
+
+state.hand.forEach((card,i)=>{
+
+handHtml+=`
+<div class="card ${card.rarity}" onclick="playCard(${i})">
+${cardHtml(card)}
+</div>
+`;
+
+});
+
+document.getElementById("hand").innerHTML=
+handHtml || "沒有手牌";
+
+let mapHtml="";
+
+state.map.forEach((n,i)=>{
+
+mapHtml+=`
+<div class="node ${n.done?'done':''}" onclick="enterNode(${i})">
+${n.type}
+</div>
+`;
+
+});
+
+document.getElementById("map").innerHTML=mapHtml;
+
+if(state.enemy){
+
+document.getElementById("enemyArea").innerHTML=`
+
+<div class="enemy" id="enemyBox">
+
+<h2 class="${state.enemy.rank==='boss'?'boss':''}">
+${state.enemy.name}
+</h2>
+
+<div>
+❤️ ${state.enemy.hp}/${state.enemy.maxHp}
+</div>
+
+<div class="hpbar">
+<div class="hpfill"
+style="width:${state.enemy.hp/state.enemy.maxHp*100}%">
+</div>
+</div>
+
+<div style="margin-top:8px">
+⚔️ 攻擊：${state.enemy.atk}
+</div>
+
+<div class="poison">
+☠️ 中毒：${state.enemy.poison}
+</div>
+
+<div class="vul">
+💥 易傷：${state.enemy.vulnerable}
+</div>
+
+</div>
+`;
+
+}else{
+
+document.getElementById("enemyArea").innerHTML=
+"<div class='small'>目前沒有敵人</div>";
+
+}
+
+let relicHtml="";
+
+state.relics.forEach(r=>{
+
+relicHtml+=`
+<div class="relic">
+<div><b>${r.name}</b></div>
+<div class="small">${r.desc}</div>
+</div>
+`;
+
+});
+
+document.getElementById("relics").innerHTML=
+relicHtml || "無";
+
+}
+
+function saveGame(){
+
+localStorage.setItem(
+"abyss_rune_ultimate_save",
+JSON.stringify(state)
+);
+
+log("💾 已存檔");
+
+}
+
+function loadGame(){
+
+const raw=localStorage.getItem(
+"abyss_rune_ultimate_save"
+);
+
+if(!raw){
+
+log("❌ 沒有存檔");
+return;
+
+}
+
+state=JSON.parse(raw);
+
+render();
+
+log("📀 讀取完成");
+
+}
+
+setJob("warrior");
+
+render();
+
+log("🌌 深淵符文：終焉高塔 Ultimate++ 啟動");
+
+</script>
+
+</body>
+</html>
