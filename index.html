@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>深淵符文：新增抽卡版</title>
+<title>深淵符文:終焉高塔</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;user-select:none;}
 body{background:#05070d;color:#e6ffe6;font-family:"Segoe UI","Noto Sans TC",sans-serif;overflow:hidden;}
@@ -53,7 +53,7 @@ h2,h3{margin:8px 0;}
 <div class="wrap">
 <!-- LEFT -->
 <div class="panel">
-<h2>🧍 你</h2>
+<h2>🧍 英雄</h2>
 <div class="stat">❤️ HP：<span id="hp"></span>/<span id="maxHp"></span></div>
 <div class="hpbar"><div id="playerHpFill" class="hpfill playerhp"></div></div>
 <div class="stat">⚡ 能量：<span id="energy"></span>/<span id="maxEnergy"></span></div>
@@ -171,37 +171,59 @@ const drawOnlyCardPool = [
 // 原有抽卡卡牌（保留）
 {name:"連擊",type:"multi",hits:3,dmg:3,cost:1,rarity:"common",desc:"造成3傷害3次", price: 45},
 {name:"戰意",type:"buff",strength:2,cost:1,rarity:"common",desc:"獲得2力量", price: 50},
-{name:"毒爆",type:"poisonburst",cost:2,rarity:"rare",desc:"引爆所有中毒", price: 60},
-{name:"終焉斬",type:"atk",dmg:40,cost:4,rarity:"epic",desc:"造成40傷害", price: 75},
-{name:"時空扭曲",type:"energy",gain:3,draw:2,cost:0,rarity:"epic",desc:"+3能量並抽2張", price: 90},
-{name:"深淵降臨",type:"percentdmg",percent:0.5,cost:5,rarity:"legend",desc:"造成敵人50%最大生命傷害", price: 100},
-{name:"無限輪迴",type:"fullheal",cost:3,rarity:"legend",desc:"回滿生命並抽滿手牌", price: 115},
+{name:"毒爆",type:"poisonburst",cost:2,rarity:"rare",desc:"引爆所有中毒", price: 70},
+{name:"終焉斬",type:"atk",dmg:40,cost:4,rarity:"epic",desc:"造成40傷害", price: 95},
+{name:"時空扭曲",type:"energy",gain:3,draw:2,cost:0,rarity:"epic",desc:"+3能量並抽2張", price: 110},
+{name:"深淵降臨",type:"percentdmg",percent:0.5,cost:5,rarity:"legend",desc:"造成敵人50%最大生命傷害", price: 150},
+{name:"無限輪迴",type:"fullheal",cost:3,rarity:"legend",desc:"回滿生命並抽滿手牌", price: 200},
 // 新增普通卡
 {name:"治癒術",type:"heal",heal:8,cost:1,rarity:"common",desc:"恢復8生命", price: 35},
 {name:"盾擊",type:"atkblock",dmg:8,block:8,cost:1,rarity:"common",desc:"造成8傷害並獲得8護甲", price: 40},
 // 新增稀有卡
-{name:"吸血斬",type:"lifesteal",dmg:12,heal:6,cost:2,rarity:"rare",desc:"造成12傷害並恢復6生命", price: 50},
+{name:"吸血斬",type:"lifesteal",dmg:12,heal:6,cost:2,rarity:"rare",desc:"造成12傷害並恢復6生命", price: 65},
 // 新增史詩卡
-{name:"狂暴",type:"buff",strength:5,cost:2,rarity:"epic",desc:"獲得5力量", price: 60},
-{name:"風暴連斬",type:"multi",hits:6,dmg:4,cost:3,rarity:"epic",desc:"攻擊6次", price: 65},
+{name:"狂暴",type:"buff",strength:5,cost:2,rarity:"epic",desc:"獲得5力量", price: 90},
+{name:"風暴連斬",type:"multi",hits:6,dmg:4,cost:3,rarity:"epic",desc:"攻擊6次", price: 105},
 // 新增傳說卡
-{name:"神之怒",type:"atk",dmg:100,cost:6,rarity:"legend",desc:"造成100傷害", price: 100},
-{name:"滅世風暴",type:"multi",hits:10,dmg:8,cost:5,rarity:"legend",desc:"攻擊10次", price: 120}
+{name:"神之怒",type:"atk",dmg:100,cost:6,rarity:"legend",desc:"造成100傷害", price: 250},
+{name:"滅世風暴",type:"multi",hits:10,dmg:8,cost:5,rarity:"legend",desc:"攻擊10次", price: 280}
 ];
 
+// ================= 遺物池（新增多種，按稀有度權重）=================
 const relicPool = [
-{name:"毒蛇雕像",desc:"每回合開始時對敵人施加1中毒",effect(){if(state.enemy){state.enemy.poison+=1;log("🐍 毒蛇雕像施加1中毒");}}},
-{name:"鮮血戒指",desc:"攻擊後恢復2生命",effect(type){if(type==="attack"){heal(2);}}},
-{name:"魔力核心",desc:"每場戰鬥開始時 +1 最大能量",battleStart(){state.energy+=1;}},
-{name:"尖刺護甲",desc:"被攻擊時反傷20%",effect(type,dmg){if(type==="hit"&&state.enemy){let thorns=Math.max(1,Math.floor(dmg*.2));state.enemy.hp-=thorns;log(`🩸 尖刺護甲反傷 ${thorns}`);}}},
-{name:"遠古卷軸",desc:"每回合額外抽1張牌",turnStart(){draw(1);}}
+// 普通遺物 (權重高)
+{name:"尖刺護甲",desc:"被攻擊時反傷20%",rarity:"common",weight:8,
+ effect(type,dmg){if(type==="hit"&&state.enemy){let thorns=Math.max(1,Math.floor(dmg*.2));state.enemy.hp-=thorns;log(`🩸 尖刺護甲反傷 ${thorns}`);}}},
+{name:"遠古卷軸",desc:"每回合額外抽1張牌",rarity:"common",weight:8,
+ turnStart(){draw(1);}},
+{name:"力量護符",desc:"戰鬥開始時獲得2力量",rarity:"common",weight:8,
+ battleStart(){state.strength+=2;log("💪 力量護符 +2 力量");}},
+{name:"生命水晶",desc:"最大生命+10",rarity:"common",weight:8,
+ onGet(){state.maxHp+=10;state.hp+=10;log("❤️ 最大生命 +10");}},
+// 稀有遺物 (權重中)
+{name:"魔力核心",desc:"每場戰鬥開始時 +1 能量",rarity:"rare",weight:3,
+ battleStart(){state.energy+=1;}},
+{name:"鮮血戒指",desc:"攻擊後恢復2生命",rarity:"rare",weight:3,
+ effect(type){if(type==="attack"){heal(2);}}},
+{name:"毒蛇雕像",desc:"每回合開始時對敵人施加1中毒",rarity:"rare",weight:3,
+ effect(){if(state.enemy){state.enemy.poison+=1;log("🐍 毒蛇雕像施加1中毒");}}},
+{name:"幸運幣",desc:"商店價格降低10%",rarity:"rare",weight:3,
+ onGet(){state.shopDiscount=0.9;log("💰 商店價格 -10%");}},
+// 史詩遺物 (權重低)
+{name:"龍心",desc:"最大生命+25",rarity:"epic",weight:1,
+ onGet(){state.maxHp+=25;state.hp+=25;log("❤️ 龍心 +25 最大生命");}},
+{name:"風暴披風",desc:"每回合開始時獲得3護甲",rarity:"epic",weight:1,
+ turnStart(){state.block+=3;log("🌬️ 風暴披風 +3 護甲");}},
+{name:"時間沙漏",desc:"首回合能量+2",rarity:"epic",weight:1,
+ battleStart(){state.energy+=2;log("⏳ 時間沙漏 +2 能量");}}
 ];
 
 let state = {
 hp:80,maxHp:80,energy:3,maxEnergy:3,block:0,gold:60,floor:1,job:"warrior",
 strength:0,poison:0,deck:[],hand:[],discard:[],enemy:null,map:[],relics:[],
 inBattle:false,usedOnceCards:[],
-unlockedCardNames:[]   // 抽卡解鎖但尚未購買的卡牌名稱
+unlockedCardNames:[],
+shopDiscount:1
 };
 
 function copyCardFromPool(pool,name){ let c=pool.find(x=>x.name===name); return JSON.parse(JSON.stringify(c)); }
@@ -210,10 +232,7 @@ function shuffle(arr){ let a=[...arr]; for(let i=a.length-1;i>0;i--){let j=Math.
 function log(text){ let div=document.createElement("div");div.innerHTML=text;document.getElementById("log").prepend(div);while(document.getElementById("log").children.length>80) document.getElementById("log").removeChild(document.getElementById("log").lastChild); }
 function heal(v){ state.hp=Math.min(state.maxHp,state.hp+v); }
 
-function getNormalCards(){
-    return [...baseCardPool, ...existingExtraCardPool];
-}
-
+function getNormalCards(){ return [...baseCardPool, ...existingExtraCardPool]; }
 function getUnlockedCardObjects(){
     return state.unlockedCardNames.map(name => {
         let card = drawOnlyCardPool.find(c => c.name === name);
@@ -239,13 +258,14 @@ if(job==="mage") state.maxEnergy=4;
 state.hp=state.maxHp; state.energy=state.maxEnergy;
 state.block=0; state.strength=0; state.poison=0;
 state.relics=[]; state.unlockedCardNames=[];
+state.shopDiscount=1;
 state.deck=getInitialDeck(); state.hand=[]; state.discard=[];
 generateMap(); render();
 log(`🎭 選擇職業：${job}`);
 }
 function generateMap(){
 state.map=[];
-const types=["戰鬥","戰鬥","精英","休息","寶箱","商店","商店"];
+const types=["戰鬥","戰鬥","精英","休息","寶箱","商店"];
 for(let i=0;i<6;i++){ let type=types[Math.floor(Math.random()*types.length)]; state.map.push({type,done:false}); }
 if(state.floor%5===0){ let idx=Math.floor(Math.random()*state.map.length); state.map[idx]={type:"Boss",done:false}; }
 }
@@ -256,7 +276,15 @@ case "戰鬥": spawnEnemy("normal"); break;
 case "精英": spawnEnemy("elite"); break;
 case "Boss": spawnEnemy("boss"); break;
 case "休息": heal(Math.floor(state.maxHp*.4)); log("🔥 休息恢復生命"); break;
-case "寶箱": let gold=40+Math.floor(Math.random()*50); state.gold+=gold; log(`💰 寶箱獲得 ${gold} 魂石`); if(Math.random()<.55) gainRelic(); break;
+case "寶箱": 
+    let goldGain=40+Math.floor(Math.random()*50);
+    state.gold+=goldGain;
+    log(`💰 寶箱獲得 ${goldGain} 魂石`);
+    // 25% 機率獲得遺物（可調整）
+    if(Math.random()<0.25){
+        gainRelic();
+    }
+    break;
 case "商店": openShop(); break;
 }
 render();
@@ -305,71 +333,20 @@ state.energy-=card.cost;
 state.hand.splice(i,1);
 if(card.once) state.usedOnceCards.push(card.name);
 switch(card.type){
-case "atk": 
-    dealDamage(card.dmg + state.strength);
-    break;
-case "block": 
-    state.block += card.block;
-    log(`🛡️ 獲得 ${card.block} 護甲`);
-    break;
-case "poison": 
-    dealDamage(card.dmg);
-    state.enemy.poison += card.poison;
-    log(`☠️ 敵人中毒 ${card.poison}`);
-    break;
-case "multi": 
-    for(let x=0;x<card.hits;x++){
-        dealDamage(card.dmg + state.strength);
-    }
-    break;
-case "energy": 
-    state.energy += card.gain;
-    draw(card.draw);
-    log(`⚡ +${card.gain} 能量`);
-    break;
-case "vul": 
-    state.enemy.vulnerable += card.vulnerable;
-    log(`💥 敵人易傷 ${card.vulnerable}`);
-    break;
-case "buff": 
-    state.strength += card.strength;
-    log(`💪 力量 +${card.strength}`);
-    break;
-case "poisonburst": 
-    let dmg=(state.enemy.poison||0)*2;
-    state.enemy.hp-=dmg;
-    state.enemy.poison=0;
-    log(`💣 毒爆造成 ${dmg} 傷害，中毒清除`);
-    break;
-case "percentdmg": 
-    let percentDmg=Math.floor(state.enemy.maxHp*card.percent);
-    state.enemy.hp-=percentDmg;
-    log(`🌑 深淵降臨造成 ${percentDmg} 傷害`);
-    break;
-case "fullheal": 
-    state.hp=state.maxHp;
-    log(`❤️ 生命已回滿`);
-    let targetHandSize=10;
-    while(state.hand.length<targetHandSize && (state.deck.length>0||state.discard.length>0)) draw(1);
-    log(`🃏 抽滿手牌`);
-    break;
-// ================= 新增卡牌效果 =================
-case "lifesteal":
-    dealDamage(card.dmg);
-    heal(card.heal);
-    log(`🩸 恢復 ${card.heal} HP`);
-    break;
-case "heal":
-    heal(card.heal);
-    log(`❤️ 恢復 ${card.heal} HP`);
-    break;
-case "atkblock":
-    dealDamage(card.dmg);
-    state.block += card.block;
-    log(`🛡️ 獲得 ${card.block} 護甲`);
-    break;
-default: 
-    log(`未知卡牌類型: ${card.type}`);
+case "atk": dealDamage(card.dmg+state.strength); break;
+case "block": state.block+=card.block; log(`🛡️ 獲得 ${card.block} 護甲`); break;
+case "poison": dealDamage(card.dmg); state.enemy.poison+=card.poison; log(`☠️ 敵人中毒 ${card.poison}`); break;
+case "multi": for(let x=0;x<card.hits;x++) dealDamage(card.dmg+state.strength); break;
+case "energy": state.energy+=card.gain; draw(card.draw); log(`⚡ +${card.gain} 能量`); break;
+case "vul": state.enemy.vulnerable+=card.vulnerable; log(`💥 敵人易傷 ${card.vulnerable}`); break;
+case "buff": state.strength+=card.strength; log(`💪 力量 +${card.strength}`); break;
+case "poisonburst": let dmg=(state.enemy.poison||0)*2; state.enemy.hp-=dmg; state.enemy.poison=0; log(`💣 毒爆造成 ${dmg} 傷害，中毒清除`); break;
+case "percentdmg": let percentDmg=Math.floor(state.enemy.maxHp*card.percent); state.enemy.hp-=percentDmg; log(`🌑 深淵降臨造成 ${percentDmg} 傷害`); break;
+case "fullheal": state.hp=state.maxHp; log(`❤️ 生命已回滿`); let targetHandSize=10; while(state.hand.length<targetHandSize && (state.deck.length>0||state.discard.length>0)) draw(1); log(`🃏 抽滿手牌`); break;
+case "lifesteal": dealDamage(card.dmg); heal(card.heal); log(`🩸 恢復 ${card.heal} HP`); break;
+case "heal": heal(card.heal); log(`❤️ 恢復 ${card.heal} HP`); break;
+case "atkblock": dealDamage(card.dmg); state.block+=card.block; log(`🛡️ 獲得 ${card.block} 護甲`); break;
+default: log(`未知卡牌類型: ${card.type}`);
 }
 state.discard.push(card);
 if(state.enemy && state.enemy.hp<=0){ victory(); return; }
@@ -400,19 +377,33 @@ if(state.enemy.rank==="elite") rewardGold*=2;
 if(state.enemy.rank==="boss") rewardGold*=4;
 state.gold+=rewardGold;
 log(`🏆 勝利！獲得 ${rewardGold} 魂石`);
-if(state.enemy.rank==="elite" || state.enemy.rank==="boss" || Math.random()<.45) gainRelic();
+// 遺物不再從戰鬥中獲得，僅在寶箱中獲得
 showCardReward();
 state.enemy=null;
 state.floor++;
 generateMap();
 render();
 }
+// ================= 加權遺物掉落（僅從寶箱觸發）=================
 function gainRelic(){
-let choices=relicPool.filter(r=>!state.relics.find(x=>x.name===r.name));
-if(!choices.length)return;
-let relic=JSON.parse(JSON.stringify(choices[Math.floor(Math.random()*choices.length)]));
-state.relics.push(relic);
-log(`🧿 獲得遺物：${relic.name}`);
+    let available = relicPool.filter(r => !state.relics.some(ex => ex.name === r.name));
+    if(available.length===0) return;
+    let totalWeight = available.reduce((sum, r) => sum + (r.weight || 1), 0);
+    let rand = Math.random() * totalWeight;
+    let accum = 0;
+    let selected = null;
+    for(let r of available){
+        accum += (r.weight || 1);
+        if(rand <= accum){
+            selected = r;
+            break;
+        }
+    }
+    if(!selected) selected = available[0];
+    let newRelic = JSON.parse(JSON.stringify(selected));
+    state.relics.push(newRelic);
+    if(newRelic.onGet) newRelic.onGet();
+    log(`🧿 獲得遺物：${newRelic.name}（${newRelic.rarity}）`);
 }
 function showCardReward(){
 let modal=document.getElementById("rewardModal");
@@ -445,8 +436,6 @@ log("💀 你死亡了");
 state.floor=1; state.gold=60;
 setJob(state.job);
 }
-
-// ================= 商店系統：混合一般卡與解鎖卡（3張）=================
 function openShop(){
 let modal=document.getElementById("shopModal");
 modal.style.display="flex";
@@ -476,10 +465,12 @@ if (state.unlockedCardNames.includes(card.name)) {
 } else {
     basePrice = 30 + card.cost * 10;
 }
-div.innerHTML=cardHtml(card)+`<div style="margin-top:10px"><button class="btn">購買 ${basePrice} 石</button></div>`;
+let finalPrice = Math.floor(basePrice * (state.shopDiscount || 1));
+if(finalPrice < 1) finalPrice=1;
+div.innerHTML=cardHtml(card)+`<div style="margin-top:10px"><button class="btn">購買 ${finalPrice} 石</button></div>`;
 div.onclick=()=>{
-if(state.gold<basePrice){ log("💰 魂石不足"); return; }
-state.gold-=basePrice;
+if(state.gold<finalPrice){ log("💰 魂石不足"); return; }
+state.gold-=finalPrice;
 if(state.unlockedCardNames.includes(card.name)){
     const idx = state.unlockedCardNames.indexOf(card.name);
     if(idx !== -1) state.unlockedCardNames.splice(idx,1);
@@ -524,7 +515,7 @@ area.appendChild(div);
 }
 function closeDeckView(){ document.getElementById("deckModal").style.display="none"; }
 
-// ================= 抽卡系統（解鎖購買資格）=================
+// ================= 抽卡系統 =================
 function isCardUnlocked(cardName){
     return state.unlockedCardNames.includes(cardName) || state.deck.some(c=>c.name===cardName);
 }
@@ -617,11 +608,11 @@ let relicHtml="";
 state.relics.forEach(r=>{ relicHtml+=`<div class="relic"><div><b>${r.name}</b></div><div class="small">${r.desc}</div></div>`; });
 document.getElementById("relics").innerHTML=relicHtml||"無";
 }
-function saveGame(){ localStorage.setItem("abyss_rune_full_version",JSON.stringify(state)); log("💾 已存檔"); }
-function loadGame(){ let raw=localStorage.getItem("abyss_rune_full_version"); if(!raw){ log("❌ 沒有存檔"); return; } state=JSON.parse(raw); render(); log("📀 讀取完成"); }
+function saveGame(){ localStorage.setItem("abyss_rune_chest_relics",JSON.stringify(state)); log("💾 已存檔"); }
+function loadGame(){ let raw=localStorage.getItem("abyss_rune_chest_relics"); if(!raw){ log("❌ 沒有存檔"); return; } state=JSON.parse(raw); render(); log("📀 讀取完成"); }
 setJob("warrior");
 render();
-log("🌌 深淵符文 啟動");
+log("🌌 深淵符文啟動");
 </script>
 </body>
 </html>
