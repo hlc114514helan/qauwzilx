@@ -75,6 +75,7 @@ h2,h3{margin:8px 0;}
 <div class="toprow">
 <button class="btn" onclick="openDeckView()">查看牌組</button>
 <button class="btn" onclick="openDrawModal()">✨ 抽卡</button>
+<button class="btn" onclick="openBlackMarket()">💰 奸商</button>
 </div>
 <h3>🧿 遺物</h3>
 <div id="relics"></div>
@@ -111,6 +112,17 @@ h2,h3{margin:8px 0;}
 <button class="btn" onclick="removeCardShop()">🗑️ 刪除卡牌（35）</button>
 <button class="btn" onclick="closeShop()">離開商店</button>
 </div>
+</div>
+</div>
+
+<!-- 奸商商店 -->
+<div class="modal" id="blackMarketModal">
+<div class="modal-content">
+<h2>💰 奸商（三倍價格）</h2>
+<p class="small">戰鬥中也可購買，立即加入牌組</p>
+<div>魂石：<span id="blackGold"></span></div>
+<div id="blackCards" class="shop-grid"></div>
+<button class="btn" onclick="closeBlackMarket()">關閉</button>
 </div>
 </div>
 
@@ -171,22 +183,22 @@ const drawOnlyCardPool = [
 // 原有抽卡卡牌（保留）
 {name:"連擊",type:"multi",hits:3,dmg:3,cost:1,rarity:"common",desc:"造成3傷害3次", price: 45},
 {name:"戰意",type:"buff",strength:2,cost:1,rarity:"common",desc:"獲得2力量", price: 50},
-{name:"毒爆",type:"poisonburst",cost:2,rarity:"rare",desc:"引爆所有中毒", price: 70},
-{name:"終焉斬",type:"atk",dmg:40,cost:4,rarity:"epic",desc:"造成40傷害", price: 95},
-{name:"時空扭曲",type:"energy",gain:3,draw:2,cost:0,rarity:"epic",desc:"+3能量並抽2張", price: 110},
-{name:"深淵降臨",type:"percentdmg",percent:0.5,cost:5,rarity:"legend",desc:"造成敵人50%最大生命傷害", price: 150},
-{name:"無限輪迴",type:"fullheal",cost:3,rarity:"legend",desc:"回滿生命並抽滿手牌", price: 200},
+{name:"毒爆",type:"poisonburst",cost:2,rarity:"rare",desc:"引爆所有中毒", price: 55},
+{name:"終焉斬",type:"atk",dmg:40,cost:4,rarity:"epic",desc:"造成40傷害", price: 60},
+{name:"時空扭曲",type:"energy",gain:3,draw:2,cost:0,rarity:"epic",desc:"+3能量並抽2張", price: 80},
+{name:"深淵降臨",type:"percentdmg",percent:0.5,cost:5,rarity:"legend",desc:"造成敵人50%最大生命傷害", price: 95},
+{name:"無限輪迴",type:"fullheal",cost:3,rarity:"legend",desc:"回滿生命並抽滿手牌", price: 130},
 // 新增普通卡
 {name:"治癒術",type:"heal",heal:8,cost:1,rarity:"common",desc:"恢復8生命", price: 35},
 {name:"盾擊",type:"atkblock",dmg:8,block:8,cost:1,rarity:"common",desc:"造成8傷害並獲得8護甲", price: 40},
 // 新增稀有卡
-{name:"吸血斬",type:"lifesteal",dmg:12,heal:6,cost:2,rarity:"rare",desc:"造成12傷害並恢復6生命", price: 65},
+{name:"吸血斬",type:"lifesteal",dmg:12,heal:6,cost:2,rarity:"rare",desc:"造成12傷害並恢復6生命", price: 60},
 // 新增史詩卡
-{name:"狂暴",type:"buff",strength:5,cost:2,rarity:"epic",desc:"獲得5力量", price: 90},
-{name:"風暴連斬",type:"multi",hits:6,dmg:4,cost:3,rarity:"epic",desc:"攻擊6次", price: 105},
+{name:"狂暴",type:"buff",strength:5,cost:2,rarity:"epic",desc:"獲得5力量", price: 70},
+{name:"風暴連斬",type:"multi",hits:6,dmg:4,cost:3,rarity:"epic",desc:"攻擊6次", price: 80},
 // 新增傳說卡
-{name:"神之怒",type:"atk",dmg:100,cost:6,rarity:"legend",desc:"造成100傷害", price: 250},
-{name:"滅世風暴",type:"multi",hits:10,dmg:8,cost:5,rarity:"legend",desc:"攻擊10次", price: 280}
+{name:"神之怒",type:"atk",dmg:100,cost:6,rarity:"legend",desc:"造成100傷害", price: 85},
+{name:"滅世風暴",type:"multi",hits:10,dmg:8,cost:5,rarity:"legend",desc:"攻擊10次", price: 120}
 ];
 
 // ================= 遺物池（新增多種，按稀有度權重）=================
@@ -514,6 +526,60 @@ area.appendChild(div);
 });
 }
 function closeDeckView(){ document.getElementById("deckModal").style.display="none"; }
+
+// ================= 奸商系統 =================
+function openBlackMarket(){
+    let modal = document.getElementById("blackMarketModal");
+    modal.style.display = "flex";
+    document.getElementById("blackGold").innerText = state.gold;
+    let area = document.getElementById("blackCards");
+    area.innerHTML = "";
+    let allAvailable = [...getNormalCards(), ...getUnlockedCardObjects()];
+    if(allAvailable.length === 0){
+        area.innerHTML = "<div class='small'>暫無可購買卡牌</div>";
+        return;
+    }
+    let shuffled = shuffle([...allAvailable]);
+    let selected = [];
+    for(let i=0; i<shuffled.length && selected.length<3; i++){
+        let card = shuffled[i];
+        if(!selected.some(c=>c.name===card.name)){
+            selected.push(card);
+        }
+    }
+    selected.forEach(card=>{
+        let div = document.createElement("div");
+        div.className = `card ${card.rarity}`;
+        let basePrice;
+        if (state.unlockedCardNames.includes(card.name)) {
+            const originalCard = drawOnlyCardPool.find(c => c.name === card.name);
+            basePrice = originalCard ? originalCard.price : 60;
+        } else {
+            basePrice = 30 + card.cost * 10;
+        }
+        let finalPrice = Math.floor(basePrice * 3 * (state.shopDiscount || 1)); // 三倍價格！
+        if(finalPrice < 1) finalPrice = 1;
+        div.innerHTML = cardHtml(card) + `<div style="margin-top:10px"><button class="btn">奸商價 ${finalPrice} 石（原價 ${Math.floor(basePrice)}）</button></div>`;
+        div.onclick = () => {
+            if(state.gold < finalPrice){ log("💰 魂石不足"); return; }
+            state.gold -= finalPrice;
+            if(state.unlockedCardNames.includes(card.name)){
+                const idx = state.unlockedCardNames.indexOf(card.name);
+                if(idx !== -1) state.unlockedCardNames.splice(idx,1);
+                log(`💰 奸商：購買解鎖卡 ${card.name}，已加入牌組（三倍價格）`);
+            } else {
+                log(`💰 奸商：購買一般卡 ${card.name}，三倍價格`);
+            }
+            state.deck.push(card);
+            openBlackMarket(); // 刷新奸商店
+            render();
+        };
+        area.appendChild(div);
+    });
+}
+function closeBlackMarket(){
+    document.getElementById("blackMarketModal").style.display = "none";
+}
 
 // ================= 抽卡系統 =================
 function isCardUnlocked(cardName){
