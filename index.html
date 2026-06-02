@@ -621,7 +621,7 @@ function saveGame(){ localStorage.setItem("abyss_rune_full_version",JSON.stringi
 function loadGame(){ let raw=localStorage.getItem("abyss_rune_full_version"); if(!raw){ log("❌ 沒有存檔"); return; } state=JSON.parse(raw); render(); log("📀 讀取完成"); }
 setJob("warrior");
 render();
-log("🌌 深淵符文：完整卡牌版（所有新卡） 啟動");
+log("🌌 深淵符文 啟動");
 </script>
 </body>
 </html>
