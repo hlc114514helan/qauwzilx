@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>深淵符文:終焉高塔 | 能量遺物修正版</title>
+<title>深淵符文:終焉高塔</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;user-select:none;}
 body{background:#05070d;color:#e6ffe6;font-family:"Segoe UI","Noto Sans TC",sans-serif;overflow:hidden;}
@@ -47,29 +47,23 @@ h2,h3{margin:8px 0;}
 .toprow{display:flex;gap:10px;flex-wrap:wrap;}
 .result-card{width:110px;min-height:160px;background:#111827;border-radius:12px;padding:8px;margin:6px;text-align:center;position:relative;}
 .result-card .energy{width:24px;height:24px;font-size:12px;top:4px;right:6px;}
-.evolution-btn{
-    background:#ffaa33;
-    color:#000;
-    font-weight:bold;
-    border:1px solid #ffcc55;
-}
-.evolution-btn:hover{
-    background:#ffcc66;
-}
-
-/* 抽卡動畫 */
-@keyframes cardPop {
-    0% { opacity: 0; transform: scale(0.5) rotate(-5deg); }
-    60% { opacity: 0.8; transform: scale(1.05) rotate(2deg); }
-    100% { opacity: 1; transform: scale(1) rotate(0); }
-}
-.result-card {
-    animation: cardPop 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
-}
-.ten-card {
-    opacity: 0;
-    animation: cardPop 0.25s ease-out forwards;
-}
+.evolution-btn{background:#ffaa33;color:#000;font-weight:bold;border:1px solid #ffcc55;}
+.evolution-btn:hover{background:#ffcc66;}
+@keyframes cardPop{0%{opacity:0;transform:scale(0.5) rotate(-5deg);}60%{opacity:0.8;transform:scale(1.05) rotate(2deg);}100%{opacity:1;transform:scale(1) rotate(0);}}
+.result-card{animation:cardPop 0.3s cubic-bezier(0.2,0.9,0.4,1.1) forwards;}
+@keyframes spin{0%{transform:rotate(0deg);}100%{transform:rotate(1080deg);}}
+.spin-animation{animation:spin 1.2s cubic-bezier(0.2,0.9,0.4,1.1) forwards;}
+.wheel-result{font-size:28px;font-weight:bold;text-align:center;padding:30px;background:#0f1a12;border-radius:50%;width:250px;height:250px;display:flex;align-items:center;justify-content:center;margin:20px auto;border:3px solid #2dff7a;box-shadow:0 0 20px rgba(45,255,122,0.3);}
+.wheel-button{background:#2dff7a;color:#000;font-weight:bold;padding:10px 24px;border-radius:40px;cursor:pointer;border:none;margin-top:20px;}
+.wheel-button:hover{background:#8cffb3;}
+.collection-card{width:110px;min-height:150px;background:#111827;border-radius:12px;padding:8px;margin:6px;text-align:center;position:relative;transition:0.1s;}
+.collection-card.locked{opacity:0.5;filter:grayscale(0.5);}
+.collection-card.locked::after{content:"🔒";position:absolute;top:5px;right:8px;font-size:18px;opacity:0.8;}
+.collection-card .energy{width:24px;height:24px;font-size:12px;top:4px;right:6px;}
+.collection-name{font-size:14px;font-weight:bold;margin-top:8px;}
+.collection-rarity{font-size:11px;margin-top:4px;}
+.collection-desc{font-size:10px;margin-top:6px;opacity:0.8;}
+.collection-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:12px;max-height:70vh;overflow-y:auto;}
 </style>
 </head>
 <body>
@@ -88,6 +82,7 @@ h2,h3{margin:8px 0;}
 <div class="stat">💪 力量：<span id="strength"></span></div>
 <div class="stat">🌟 進化點數：<span id="evoPoints"></span></div>
 <button id="evolveBtn" class="btn evolution-btn" onclick="evolveJob()">🌟 職業進化</button>
+<div id="hiddenJobBtn" style="margin-top:8px;"></div>
 <h3>🎭 職業</h3>
 <div class="toprow">
 <button class="btn" id="jobWarrior" onclick="setJob('warrior')">⚔️ 戰士</button>
@@ -103,6 +98,7 @@ h2,h3{margin:8px 0;}
 <button class="btn" onclick="openDeckView()">查看牌組</button>
 <button class="btn" onclick="openDrawModal()">✨ 抽卡</button>
 <button class="btn" onclick="openBlackMarket()">💰 奸商</button>
+<button class="btn" onclick="openWheelModal()">🎡 幸運轉盤</button>
 </div>
 <h3>🧿 遺物</h3>
 <div id="relics"></div>
@@ -128,12 +124,14 @@ h2,h3{margin:8px 0;}
 </div>
 </div>
 
-<!-- 其他模態框 -->
+<!-- 模態框 -->
 <div class="modal" id="shopModal"><div class="modal-content"><h2>🛒 商店</h2><div>魂石：<span id="shopGold"></span></div><div id="shopCards" class="shop-grid"></div><div style="margin-top:18px"><button class="btn" onclick="healShop()">❤️ 回復30HP（25）</button><button class="btn" onclick="removeCardShop()">🗑️ 刪除卡牌（35）</button><button class="btn" onclick="closeShop()">離開商店</button></div></div></div>
 <div class="modal" id="blackMarketModal"><div class="modal-content"><h2>💰 奸商（三倍價格）</h2><p class="small">戰鬥中也可購買，立即加入牌組</p><div>魂石：<span id="blackGold"></span></div><div id="blackCards" class="shop-grid"></div><button class="btn" onclick="closeBlackMarket()">關閉</button></div></div>
 <div class="modal" id="rewardModal"><div class="modal-content"><h2>🎁 選擇一張卡牌</h2><div id="rewardCards" class="reward-grid"></div></div></div>
 <div class="modal" id="deckModal"><div class="modal-content"><h2>📚 牌組</h2><div id="deckView" class="reward-grid"></div><button class="btn" onclick="closeDeckView()">關閉</button></div></div>
-<div class="modal" id="drawModal"><div class="modal-content"><h2>✨ 抽卡系統</h2><p>魂石：<span id="drawGold"></span></p><p class="small">抽卡會解鎖一張全新卡牌，解鎖後將出現在商店（與一般商品混合），可無限購買</p><div style="display:flex; gap:12px; margin:16px 0;"><button class="btn" onclick="drawSingle()">單抽 100 石</button><button class="btn" onclick="drawTen()">十連抽 980 石</button></div><div id="drawResultArea" class="reward-grid" style="margin-top:12px;"></div><button class="btn" onclick="closeDrawModal()">關閉</button></div></div>
+<div class="modal" id="drawModal"><div class="modal-content"><h2>✨ 抽卡系統</h2><p>魂石：<span id="drawGold"></span></p><p class="small">抽卡會解鎖一張全新卡牌，解鎖後將出現在商店（與一般商品混合），可無限購買</p><div style="display:flex; gap:12px; margin:16px 0; align-items: center; justify-content: space-between;"><div><button class="btn" onclick="drawSingle()">單抽 100 石</button><button class="btn" onclick="drawTen()">十連抽 980 石</button></div><button class="btn" onclick="openCollectionModal()">📖 圖鑑</button></div><div id="drawResultArea" class="reward-grid" style="margin-top:12px;"></div><button class="btn" onclick="closeDrawModal()">關閉</button></div></div>
+<div class="modal" id="collectionModal"><div class="modal-content"><h2>📖 卡牌圖鑑</h2><p class="small">抽卡池收集狀態（抽到後解鎖）</p><div id="collectionGrid" class="collection-grid"></div><button class="btn" onclick="closeCollectionModal()">關閉</button></div></div>
+<div class="modal" id="wheelModal"><div class="modal-content"><h2>🎡 幸運轉盤</h2><p class="small">花費 60 魂石，隨機獲得一張一般卡或已解鎖卡（直接加入牌組）</p><div id="wheelSpinArea" style="text-align: center;"><div id="wheelResult" class="wheel-result">❓</div><button id="wheelStartBtn" class="wheel-button" onclick="startWheel()">開始旋轉</button></div><button class="btn" onclick="closeWheelModal()" style="margin-top:20px;">關閉</button></div></div>
 
 <script>
 // ================= 基礎卡池 =================
@@ -168,23 +166,33 @@ const drawOnlyCardPool = [
 {name:"神之怒",type:"atk",dmg:100,cost:6,rarity:"legend",desc:"造成100傷害", price:85},
 {name:"滅世風暴",type:"multi",hits:10,dmg:8,cost:5,rarity:"legend",desc:"攻擊10次", price:120}
 ];
+const hiddenCardPool = {
+    paladin: [
+        {name:"制裁",type:"atk",dmg:75,cost:3,rarity:"legend",desc:"造成75傷害並施加20易傷", vulnerable:20},
+        {name:"聖光術",type:"heal",heal:60,cost:2,rarity:"legend",desc:"恢復60生命"}
+    ],
+    ranger: [
+        {name:"連射",type:"multi",hits:2,dmg:35,cost:2,rarity:"legend",desc:"造成35傷害2次"},
+        {name:"陷阱",type:"debuff",cost:3,rarity:"legend",desc:"敵人下回合攻擊 -50%", effect:()=>{ if(state.enemy) state.enemy.nextTurnAtkMod = 0.5; log("🗡️ 陷阱生效，下回合敵人攻擊減半"); }}
+    ],
+    vampire: [
+        {name:"緋紅之噬",type:"lifesteal",dmg:80,heal:30,cost:3,rarity:"legend",desc:"造成80傷害並恢復30生命"},
+        {name:"紅蓮解體",type:"atk",dmg:300,cost:9,rarity:"legend",desc:"造成300傷害"}
+    ]
+};
 const relicPool = [
 {name:"尖刺護甲",desc:"被攻擊時反傷20%",rarity:"common",weight:8, effect(type,dmg){if(type==="hit"&&state.enemy){let thorns=Math.max(1,Math.floor(dmg*0.2));state.enemy.hp-=thorns;log(`🩸 尖刺護甲反傷 ${thorns}`);}}},
 {name:"遠古卷軸",desc:"每回合額外抽1張牌",rarity:"common",weight:8, turnStart(){draw(1);}},
 {name:"力量護符",desc:"永久獲得2力量",rarity:"common",weight:8, onGet(){state.strength+=2;log("💪 力量護符 +2 力量");}},
 {name:"生命水晶",desc:"最大生命+10",rarity:"common",weight:8, onGet(){state.maxHp+=10;state.hp+=10;log("❤️ 最大生命 +10");}},
-{name:"魔力核心",desc:"最大能量 +1",rarity:"rare",weight:3,
- onGet(){state.maxEnergy++; log("✨ 最大能量 +1");},
- battleStart(){/* 無需額外動作，能量已由 spawnEnemy 正確初始化 */}},
+{name:"魔力核心",desc:"最大能量 +1",rarity:"rare",weight:3, onGet(){state.maxEnergy++; log("✨ 最大能量 +1");}, battleStart(){}},
 {name:"鮮血戒指",desc:"攻擊後恢復10生命",rarity:"rare",weight:3, effect(type){if(type==="attack"){heal(10);}}},
-{name:"毒蛇雕像",desc:"每回合開始時對敵人施加3中毒",rarity:"rare",weight:3, turnStart(){if(state.enemy){state.enemy.poison+=3;log("🐍 毒蛇雕像施加3中毒");}}},
+{name:"毒蛇雕像",desc:"每回合開始時對敵人施加30中毒",rarity:"rare",weight:3, turnStart(){if(state.enemy){state.enemy.poison+=3;log("🐍 毒蛇雕像施加30中毒");}}},
 {name:"幸運幣",desc:"商店價格降低10%",rarity:"rare",weight:3, onGet(){state.shopDiscount=0.9;log("💰 商店價格 -10%");}},
 {name:"龍心",desc:"最大生命+25",rarity:"epic",weight:1, onGet(){state.maxHp+=25;state.hp+=25;log("❤️ 龍心 +25 最大生命");}},
-{name:"風暴披風",desc:"每回合開始時獲得3護甲",rarity:"epic",weight:1, turnStart(){state.block+=3;log("🌬️ 風暴披風 +3 護甲");}},
-{name:"時間沙漏",desc:"每場戰鬥首回合 +2 能量",rarity:"epic",weight:1,
- battleStart(){state.firstTurnBonusEnergy = (state.firstTurnBonusEnergy || 0) + 2; log("⏳ 首回合額外 +2 能量");}}
+{name:"風暴披風",desc:"每回合開始時獲得10護甲",rarity:"epic",weight:1, turnStart(){state.block+=3;log("🌬️ 風暴披風 +10 護甲");}},
+{name:"時間沙漏",desc:"每場戰鬥首回合 +2 能量",rarity:"epic",weight:1, battleStart(){state.firstTurnBonusEnergy = (state.firstTurnBonusEnergy || 0) + 2; log("⏳ 首回合額外 +2 能量");}}
 ];
-
 let state = {
 hp:80,maxHp:80,energy:3,maxEnergy:3,block:0,gold:60,floor:1,job:"warrior",
 strength:0,poison:0,deck:[],hand:[],discard:[],enemy:null,map:[],relics:[],
@@ -192,15 +200,15 @@ inBattle:false,usedOnceCards:[],unlockedCardNames:[],shopDiscount:1,
 evolutionPoints:0,evolved:false,permanentStrength:0,
 gameStarted:false,
 firstTurnBonusEnergy:0,
-firstTurnOfBattle:true
+firstTurnOfBattle:true,
+rangerFirstAttackFree: false,
+vampireHealRatio: 0.4
 };
-
 function copyCardFromPool(pool,name){ let c=pool.find(x=>x.name===name); return JSON.parse(JSON.stringify(c)); }
 function copyCard(card){ return JSON.parse(JSON.stringify(card)); }
 function shuffle(arr){ let a=[...arr]; for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
 function log(text){ let div=document.createElement("div");div.innerHTML=text;document.getElementById("log").prepend(div);while(document.getElementById("log").children.length>80) document.getElementById("log").removeChild(document.getElementById("log").lastChild); }
 function heal(v){ state.hp=Math.min(state.maxHp,state.hp+v); }
-
 function getNormalCards(){ return [...baseCardPool, ...existingExtraCardPool]; }
 function getUnlockedCardObjects(){ return state.unlockedCardNames.map(name=>{let card=drawOnlyCardPool.find(c=>c.name===name); if(card) return copyCard(card); return null;}).filter(c=>c!==null); }
 function getInitialDeck(){
@@ -209,6 +217,16 @@ function getInitialDeck(){
     for(let i=0;i<5;i++) deck.push(copyCardFromPool(baseCardPool,"防禦"));
     if(state.job==="mage") deck.push(copyCardFromPool(baseCardPool,"集中"));
     if(state.job==="assassin") deck.push(copyCardFromPool(baseCardPool,"毒刃"));
+    if(state.job === "paladin"){
+        deck.push(copyCard(hiddenCardPool.paladin[0]));
+        deck.push(copyCard(hiddenCardPool.paladin[1]));
+    } else if(state.job === "ranger"){
+        deck.push(copyCard(hiddenCardPool.ranger[0]));
+        deck.push(copyCard(hiddenCardPool.ranger[1]));
+    } else if(state.job === "vampire"){
+        deck.push(copyCard(hiddenCardPool.vampire[0]));
+        deck.push(copyCard(hiddenCardPool.vampire[1]));
+    }
     return shuffle(deck);
 }
 function getBaseJobStats(){
@@ -216,6 +234,9 @@ function getBaseJobStats(){
     if(state.job==="warrior"){ baseHp=120; baseEnergy=4; }
     else if(state.job==="mage"){ baseHp=100; baseEnergy=5; }
     else if(state.job==="assassin"){ baseHp=100; baseEnergy=4; }
+    else if(state.job==="paladin"){ baseHp=150; baseEnergy=4; }
+    else if(state.job==="ranger"){ baseHp=120; baseEnergy=4; }
+    else if(state.job==="vampire"){ baseHp=130; baseEnergy=5; }
     return {baseHp, baseEnergy};
 }
 function applyEvolution(){
@@ -224,12 +245,14 @@ function applyEvolution(){
         if(state.job==="warrior"){ baseHp=350; baseEnergy=baseEnergy+3; }
         else if(state.job==="mage"){ baseHp=250; baseEnergy=8; }
         else if(state.job==="assassin"){ baseHp=300; baseEnergy=4; }
+        else if(state.job==="paladin"){ baseHp+=100; }
+        else if(state.job==="ranger"){ baseHp+=80; state.permanentStrength+=10; }
+        else if(state.job==="vampire"){ baseHp+=100; state.permanentStrength+=15; }
     }
     return {baseHp, baseEnergy};
 }
-
 function setJob(job){
-    if(state.gameStarted){
+    if(state.gameStarted && !(job === "paladin" || job === "ranger" || job === "vampire")){
         log("❌ 遊戲已開始，無法更換職業！");
         return;
     }
@@ -255,7 +278,20 @@ function setJob(job){
     render();
     log(`🎭 選擇職業：${job}`);
 }
-
+function unlockHiddenJob(jobType){
+    if(state.floor < 50){
+        log("❌ 需要達到 50 層才能解鎖隱藏職業");
+        return;
+    }
+    if(state.evolutionPoints < 5){
+        log("❌ 需要 5 個進化點數才能解鎖隱藏職業");
+        return;
+    }
+    state.evolutionPoints -= 5;
+    setJob(jobType);
+    log(`🌟 解鎖隱藏職業：${jobType}，消耗 5 進化點數`);
+    render();
+}
 function evolveJob(){
     if(state.evolved){ log("已經進化過了！"); return; }
     if(state.evolutionPoints<=0){ log("沒有進化點數，擊敗30層後的Boss可獲得"); return; }
@@ -269,12 +305,10 @@ function evolveJob(){
     let {baseHp, baseEnergy}=applyEvolution();
     state.maxHp=baseHp;
     state.maxEnergy=baseEnergy;
-    // 進化後更新當前能量為新的最大值
     state.energy = state.maxEnergy;
     log(`🌟 職業進化！獲得強化效果！`);
     render();
 }
-
 function generateMap(){
     state.map=[
         {type:"戰鬥",done:false},{type:"戰鬥",done:false},{type:"精英",done:false},{type:"商店",done:false},
@@ -286,7 +320,6 @@ function generateMap(){
     }
     state.map=shuffle(state.map);
 }
-
 function enterNode(i){
     let node=state.map[i]; if(node.done) return;
     node.done=true;
@@ -309,7 +342,6 @@ function enterNode(i){
     }
     render();
 }
-
 function spawnEnemy(rank){
     state.inBattle=true;
     let hp=40+state.floor*8, atk=6+state.floor;
@@ -317,15 +349,10 @@ function spawnEnemy(rank){
     if(rank==="boss"){ hp*=3; atk*=2.2; }
     state.enemy={name:rank==="boss"?"終焉魔王":rank==="elite"?"深淵精英":"深淵怪物",rank,hp:Math.floor(hp),maxHp:Math.floor(hp),atk:Math.floor(atk),poison:0,vulnerable:0,rage:false};
     state.hand=[]; state.discard=[]; state.deck=shuffle(state.deck); state.usedOnceCards=[];
-    // 力量保留，不重置
-    // 重置首回合標誌與額外能量
     state.firstTurnOfBattle = true;
     state.firstTurnBonusEnergy = 0;
-    // 先將能量設為最大能量（基礎值）
     state.energy = state.maxEnergy;
-    // 觸發所有遺物的 battleStart（例如時間沙漏會增加 firstTurnBonusEnergy，力量護符增加力量等）
     for(let r of state.relics) if(r.battleStart) r.battleStart();
-    // 若有首回合額外能量，加到當前能量
     if(state.firstTurnBonusEnergy > 0){
         state.energy += state.firstTurnBonusEnergy;
         log(`⏳ 首回合額外 +${state.firstTurnBonusEnergy} 能量`);
@@ -348,14 +375,15 @@ function draw(n){
 function startTurn(){
     if(!state.enemy) return;
     if(state.firstTurnOfBattle){
-        // 第一回合不重置能量（能量已在 spawnEnemy 中設定好）
         state.firstTurnOfBattle = false;
     } else {
-        // 非第一回合，重置能量為最大值
         state.energy = state.maxEnergy;
     }
-    // 護甲重置
     state.block = 0;
+    if(state.job === "paladin"){
+        state.block += 20;
+        log("🛡️ 聖騎士被動：獲得20護甲");
+    }
     if(state.job==="mage") draw(6); else draw(5);
     for(let r of state.relics) if(r.turnStart) r.turnStart();
     for(let r of state.relics) if(r.effect) r.effect();
@@ -374,13 +402,19 @@ function dealDamage(dmg){
 function playCard(i){
     if(!state.enemy) return;
     let card=state.hand[i]; if(!card) return;
-    if(state.energy<card.cost){ log("⚡ 能量不足"); return; }
+    let energyCost = card.cost;
+    if(state.job === "ranger" && card.type === "atk" && !state.rangerFirstAttackFree){
+        energyCost = 0;
+        state.rangerFirstAttackFree = true;
+        log("🏹 遊俠被動：首次攻擊不消耗能量");
+    }
+    if(state.energy<energyCost){ log("⚡ 能量不足"); return; }
     if(card.once && state.usedOnceCards.includes(card.name)){ log("❌ 此卡本回合已使用"); return; }
-    state.energy-=card.cost;
+    state.energy-=energyCost;
     state.hand.splice(i,1);
     if(card.once) state.usedOnceCards.push(card.name);
     switch(card.type){
-        case "atk": dealDamage(card.dmg+state.strength); break;
+        case "atk": dealDamage(card.dmg+state.strength); if(card.vulnerable) state.enemy.vulnerable+=card.vulnerable; break;
         case "block": state.block+=card.block; log(`🛡️ 獲得 ${card.block} 護甲`); break;
         case "poison": dealDamage(card.dmg); state.enemy.poison+=card.poison; log(`☠️ 敵人中毒 ${card.poison}`); break;
         case "multi": for(let x=0;x<card.hits;x++) dealDamage(card.dmg+state.strength); break;
@@ -393,7 +427,16 @@ function playCard(i){
         case "lifesteal": dealDamage(card.dmg); heal(card.heal); log(`🩸 恢復 ${card.heal} HP`); break;
         case "heal": heal(card.heal); log(`❤️ 恢復 ${card.heal} HP`); break;
         case "atkblock": dealDamage(card.dmg); state.block+=card.block; log(`🛡️ 獲得 ${card.block} 護甲`); break;
+        case "debuff": if(card.effect) card.effect(); break;
         default: log(`未知卡牌類型: ${card.type}`);
+    }
+    if(state.job === "vampire" && (card.type === "atk" || card.type === "multi") && card.type !== "lifesteal"){
+        let totalDamage = 0;
+        if(card.type === "atk") totalDamage = card.dmg + state.strength;
+        if(card.type === "multi") totalDamage = (card.dmg + state.strength) * card.hits;
+        let vampireHeal = Math.floor(totalDamage * state.vampireHealRatio);
+        heal(vampireHeal);
+        log(`🩸 吸血鬼被動：吸血 ${vampireHeal}`);
     }
     state.discard.push(card);
     if(state.enemy && state.enemy.hp<=0){ victory(); return; }
@@ -402,13 +445,19 @@ function playCard(i){
 function endTurn(){
     if(!state.enemy) return;
     while(state.hand.length) state.discard.push(state.hand.pop());
+    if(state.job === "ranger") state.rangerFirstAttackFree = false;
     enemyTurn();
 }
 function enemyTurn(){
     if(!state.enemy) return;
     if(state.enemy.poison>0){ state.enemy.hp-=state.enemy.poison; log(`☠️ 敵人中毒 ${state.enemy.poison}`); state.enemy.poison--; if(state.enemy.hp<=0){ victory(); return; } }
     if(state.enemy.rank==="boss" && state.enemy.hp<state.enemy.maxHp*0.5 && !state.enemy.rage){ state.enemy.rage=true; state.enemy.atk+=8; log("🔥 Boss 狂暴化！"); }
-    let dmg=state.enemy.atk;
+    let dmg = state.enemy.atk;
+    if(state.enemy.nextTurnAtkMod){
+        dmg = Math.floor(dmg * state.enemy.nextTurnAtkMod);
+        delete state.enemy.nextTurnAtkMod;
+        log("🌀 陷阱效果：敵人攻擊力減半");
+    }
     if(state.enemy.vulnerable>0) state.enemy.vulnerable--;
     dmg=Math.max(0,dmg-state.block);
     state.hp-=dmg;
@@ -505,17 +554,12 @@ function openShop(){
     let area=document.getElementById("shopCards");
     area.innerHTML="";
     let allAvailable = [...getNormalCards(), ...getUnlockedCardObjects()];
-    if(allAvailable.length===0){
-        area.innerHTML="<div class='small'>暫無可購買卡牌</div>";
-        return;
-    }
+    if(allAvailable.length===0){ area.innerHTML="<div class='small'>暫無可購買卡牌</div>"; return; }
     let shuffled = shuffle([...allAvailable]);
     let selected = [];
     for(let i=0; i<shuffled.length && selected.length<3; i++){
         let card = shuffled[i];
-        if(!selected.some(c=>c.name===card.name)){
-            selected.push(card);
-        }
+        if(!selected.some(c=>c.name===card.name)) selected.push(card);
     }
     selected.forEach(card=>{
         let div=document.createElement("div");
@@ -682,7 +726,56 @@ function openDrawModal(){
     document.getElementById("drawModal").style.display="flex";
 }
 function closeDrawModal(){ document.getElementById("drawModal").style.display="none"; }
-
+function openCollectionModal(){
+    let container = document.getElementById("collectionGrid");
+    container.innerHTML = "";
+    for(let card of drawOnlyCardPool){
+        let isUnlocked = state.unlockedCardNames.includes(card.name);
+        let div = document.createElement("div");
+        div.className = `collection-card ${isUnlocked ? "" : "locked"} ${card.rarity}`;
+        div.innerHTML = `<div class="energy">${card.cost}</div><div class="collection-name">${card.name}</div><div class="collection-rarity">${rarityText(card.rarity)}</div><div class="collection-desc">${isUnlocked ? card.desc : "尚未解鎖，請抽卡"}</div>`;
+        container.appendChild(div);
+    }
+    document.getElementById("collectionModal").style.display="flex";
+}
+function closeCollectionModal(){ document.getElementById("collectionModal").style.display="none"; }
+function openWheelModal(){
+    if(state.gold < 60){ log("💰 魂石不足 60"); return; }
+    document.getElementById("wheelModal").style.display="flex";
+    document.getElementById("wheelResult").innerHTML = "❓";
+    document.getElementById("wheelResult").style.animation = "";
+}
+function closeWheelModal(){ document.getElementById("wheelModal").style.display="none"; }
+function startWheel(){
+    let btn = document.getElementById("wheelStartBtn");
+    let resultDiv = document.getElementById("wheelResult");
+    if(btn.disabled) return;
+    btn.disabled = true;
+    if(state.gold < 60){ log("💰 魂石不足 60"); btn.disabled=false; closeWheelModal(); return; }
+    state.gold -= 60;
+    render();
+    let pool = [...getNormalCards(), ...getUnlockedCardObjects()];
+    if(pool.length === 0){ log("❌ 無可用卡片"); btn.disabled=false; closeWheelModal(); return; }
+    let randomIndex = Math.floor(Math.random() * pool.length);
+    let wonCard = copyCard(pool[randomIndex]);
+    resultDiv.style.animation = "spin 1.2s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards";
+    let spinInterval = setInterval(() => {
+        let tempPool = [...getNormalCards(), ...getUnlockedCardObjects()];
+        if(tempPool.length) {
+            let tempCard = tempPool[Math.floor(Math.random() * tempPool.length)];
+            resultDiv.innerHTML = tempCard.name.substring(0, 6);
+        } else { resultDiv.innerHTML = "???"; }
+    }, 80);
+    setTimeout(() => {
+        clearInterval(spinInterval);
+        resultDiv.style.animation = "";
+        resultDiv.innerHTML = wonCard.name;
+        resultDiv.style.fontSize = "24px";
+        state.deck.push(wonCard);
+        log(`🎡 轉盤獲得：${wonCard.name}（${rarityText(wonCard.rarity)}），已加入牌組`);
+        btn.disabled = false;
+    }, 1200);
+}
 function render(){
     document.getElementById("hp").innerText=state.hp;
     document.getElementById("maxHp").innerText=state.maxHp;
@@ -699,7 +792,10 @@ function render(){
     let jobDesc="";
     if(state.job==="warrior") jobDesc="戰士：+20最大生命";
     else if(state.job==="mage") jobDesc="法師：+1能量，每回合抽6張";
-    else jobDesc="刺客：20%暴擊";
+    else if(state.job==="assassin") jobDesc="刺客：20%暴擊";
+    else if(state.job==="paladin") jobDesc="聖騎士：每回合+20護甲";
+    else if(state.job==="ranger") jobDesc="遊俠：首次攻擊不耗能";
+    else if(state.job==="vampire") jobDesc="吸血鬼：攻擊吸血40%";
     if(state.evolved) jobDesc+=" (🌟已進化)";
     document.getElementById("jobInfo").innerHTML=jobDesc;
     document.getElementById("evolvedInfo").innerHTML=state.evolved?"已獲得進化之力":"";
@@ -726,13 +822,19 @@ function render(){
     document.getElementById("jobWarrior").disabled=started;
     document.getElementById("jobMage").disabled=started;
     document.getElementById("jobAssassin").disabled=started;
+    let hiddenBtnDiv = document.getElementById("hiddenJobBtn");
+    if(state.floor >= 50 && state.evolutionPoints >= 5 && !(state.job === "paladin" || state.job === "ranger" || state.job === "vampire")){
+        hiddenBtnDiv.innerHTML = `<button class="btn evolution-btn" onclick="unlockHiddenJob('paladin')">⚔️ 解鎖聖騎士 (5點)</button><button class="btn evolution-btn" onclick="unlockHiddenJob('ranger')">🏹 解鎖遊俠 (5點)</button><button class="btn evolution-btn" onclick="unlockHiddenJob('vampire')">🦇 解鎖吸血鬼 (5點)</button>`;
+    } else {
+        hiddenBtnDiv.innerHTML = "";
+    }
 }
 function saveGame(){
-    localStorage.setItem("abyss_rune_energy_relic_fixed",JSON.stringify(state));
+    localStorage.setItem("abyss_rune_hidden",JSON.stringify(state));
     log("💾 已存檔");
 }
 function loadGame(){
-    let raw=localStorage.getItem("abyss_rune_energy_relic_fixed");
+    let raw=localStorage.getItem("abyss_rune_hidden");
     if(!raw){ log("❌ 沒有存檔"); return; }
     state=JSON.parse(raw);
     state.relics=state.relics.map(saved=>{ let original=relicPool.find(r=>r.name===saved.name); return original||saved; });
@@ -740,12 +842,13 @@ function loadGame(){
     if(state.gameStarted===undefined) state.gameStarted=false;
     if(state.firstTurnBonusEnergy===undefined) state.firstTurnBonusEnergy=0;
     if(state.firstTurnOfBattle===undefined) state.firstTurnOfBattle=true;
+    if(state.rangerFirstAttackFree===undefined) state.rangerFirstAttackFree=false;
     render();
     log("📀 讀取完成");
 }
 setJob("warrior");
 render();
-log("🌌 深淵符文啟動");
+log("🌌 深淵符文啟動 ");
 </script>
 </body>
 </html>
