@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>深淵符文:終焉高塔 | 力量永久保留版</title>
+<title>深淵符文:終焉高塔 | 能量遺物修正版</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;user-select:none;}
 body{background:#05070d;color:#e6ffe6;font-family:"Segoe UI","Noto Sans TC",sans-serif;overflow:hidden;}
@@ -55,6 +55,20 @@ h2,h3{margin:8px 0;}
 }
 .evolution-btn:hover{
     background:#ffcc66;
+}
+
+/* 抽卡動畫 */
+@keyframes cardPop {
+    0% { opacity: 0; transform: scale(0.5) rotate(-5deg); }
+    60% { opacity: 0.8; transform: scale(1.05) rotate(2deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+.result-card {
+    animation: cardPop 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
+}
+.ten-card {
+    opacity: 0;
+    animation: cardPop 0.25s ease-out forwards;
 }
 </style>
 </head>
@@ -114,12 +128,12 @@ h2,h3{margin:8px 0;}
 </div>
 </div>
 
-<!-- 其他模態框 (省略，與之前相同) -->
+<!-- 其他模態框 -->
 <div class="modal" id="shopModal"><div class="modal-content"><h2>🛒 商店</h2><div>魂石：<span id="shopGold"></span></div><div id="shopCards" class="shop-grid"></div><div style="margin-top:18px"><button class="btn" onclick="healShop()">❤️ 回復30HP（25）</button><button class="btn" onclick="removeCardShop()">🗑️ 刪除卡牌（35）</button><button class="btn" onclick="closeShop()">離開商店</button></div></div></div>
 <div class="modal" id="blackMarketModal"><div class="modal-content"><h2>💰 奸商（三倍價格）</h2><p class="small">戰鬥中也可購買，立即加入牌組</p><div>魂石：<span id="blackGold"></span></div><div id="blackCards" class="shop-grid"></div><button class="btn" onclick="closeBlackMarket()">關閉</button></div></div>
 <div class="modal" id="rewardModal"><div class="modal-content"><h2>🎁 選擇一張卡牌</h2><div id="rewardCards" class="reward-grid"></div></div></div>
 <div class="modal" id="deckModal"><div class="modal-content"><h2>📚 牌組</h2><div id="deckView" class="reward-grid"></div><button class="btn" onclick="closeDeckView()">關閉</button></div></div>
-<div class="modal" id="drawModal"><div class="modal-content"><h2>✨ 抽卡系統</h2><p>魂石：<span id="drawGold"></span></p><p class="small">抽卡會解鎖一張全新卡牌，解鎖後將出現在商店（與一般商品混合），需再花費魂石購買（每張卡獨立定價）</p><div style="display:flex; gap:12px; margin:16px 0;"><button class="btn" onclick="drawSingle()">單抽 100 石</button><button class="btn" onclick="drawTen()">十連抽 980 石</button></div><div id="drawResultArea" class="reward-grid" style="margin-top:12px;"></div><button class="btn" onclick="closeDrawModal()">關閉</button></div></div>
+<div class="modal" id="drawModal"><div class="modal-content"><h2>✨ 抽卡系統</h2><p>魂石：<span id="drawGold"></span></p><p class="small">抽卡會解鎖一張全新卡牌，解鎖後將出現在商店（與一般商品混合），可無限購買</p><div style="display:flex; gap:12px; margin:16px 0;"><button class="btn" onclick="drawSingle()">單抽 100 石</button><button class="btn" onclick="drawTen()">十連抽 980 石</button></div><div id="drawResultArea" class="reward-grid" style="margin-top:12px;"></div><button class="btn" onclick="closeDrawModal()">關閉</button></div></div>
 
 <script>
 // ================= 基礎卡池 =================
@@ -157,11 +171,11 @@ const drawOnlyCardPool = [
 const relicPool = [
 {name:"尖刺護甲",desc:"被攻擊時反傷20%",rarity:"common",weight:8, effect(type,dmg){if(type==="hit"&&state.enemy){let thorns=Math.max(1,Math.floor(dmg*0.2));state.enemy.hp-=thorns;log(`🩸 尖刺護甲反傷 ${thorns}`);}}},
 {name:"遠古卷軸",desc:"每回合額外抽1張牌",rarity:"common",weight:8, turnStart(){draw(1);}},
-{name:"力量護符",desc:"永久獲得2力量",rarity:"common",weight:8, onGet(){state.strength+=2;log("💪 力量護符 +2 力量");}},  // 改為永久增加
+{name:"力量護符",desc:"永久獲得2力量",rarity:"common",weight:8, onGet(){state.strength+=2;log("💪 力量護符 +2 力量");}},
 {name:"生命水晶",desc:"最大生命+10",rarity:"common",weight:8, onGet(){state.maxHp+=10;state.hp+=10;log("❤️ 最大生命 +10");}},
 {name:"魔力核心",desc:"最大能量 +1",rarity:"rare",weight:3,
  onGet(){state.maxEnergy++; log("✨ 最大能量 +1");},
- battleStart(){}},
+ battleStart(){/* 無需額外動作，能量已由 spawnEnemy 正確初始化 */}},
 {name:"鮮血戒指",desc:"攻擊後恢復10生命",rarity:"rare",weight:3, effect(type){if(type==="attack"){heal(10);}}},
 {name:"毒蛇雕像",desc:"每回合開始時對敵人施加3中毒",rarity:"rare",weight:3, turnStart(){if(state.enemy){state.enemy.poison+=3;log("🐍 毒蛇雕像施加3中毒");}}},
 {name:"幸運幣",desc:"商店價格降低10%",rarity:"rare",weight:3, onGet(){state.shopDiscount=0.9;log("💰 商店價格 -10%");}},
@@ -223,7 +237,7 @@ function setJob(job){
     state.evolved=false;
     state.evolutionPoints=0;
     state.permanentStrength=0;
-    state.strength = 0;  // 重置力量
+    state.strength = 0;
     let {baseHp, baseEnergy}=applyEvolution();
     state.maxHp=baseHp;
     state.maxEnergy=baseEnergy;
@@ -249,14 +263,14 @@ function evolveJob(){
     state.evolutionPoints--;
     if(state.job==="assassin"){
         state.permanentStrength = 20;
-        state.strength += 20;  // 永久增加力量
+        state.strength += 20;
         log("🗡️ 刺客進化：永久力量 +20");
     }
     let {baseHp, baseEnergy}=applyEvolution();
     state.maxHp=baseHp;
     state.maxEnergy=baseEnergy;
-    state.hp=state.maxHp;
-    state.energy=state.maxEnergy;
+    // 進化後更新當前能量為新的最大值
+    state.energy = state.maxEnergy;
     log(`🌟 職業進化！獲得強化效果！`);
     render();
 }
@@ -303,12 +317,15 @@ function spawnEnemy(rank){
     if(rank==="boss"){ hp*=3; atk*=2.2; }
     state.enemy={name:rank==="boss"?"終焉魔王":rank==="elite"?"深淵精英":"深淵怪物",rank,hp:Math.floor(hp),maxHp:Math.floor(hp),atk:Math.floor(atk),poison:0,vulnerable:0,rage:false};
     state.hand=[]; state.discard=[]; state.deck=shuffle(state.deck); state.usedOnceCards=[];
-    // 力量保留，不重置！
-    // state.strength = state.permanentStrength;  // 這行已刪除，力量跨戰鬥保留
+    // 力量保留，不重置
+    // 重置首回合標誌與額外能量
     state.firstTurnOfBattle = true;
     state.firstTurnBonusEnergy = 0;
+    // 先將能量設為最大能量（基礎值）
     state.energy = state.maxEnergy;
+    // 觸發所有遺物的 battleStart（例如時間沙漏會增加 firstTurnBonusEnergy，力量護符增加力量等）
     for(let r of state.relics) if(r.battleStart) r.battleStart();
+    // 若有首回合額外能量，加到當前能量
     if(state.firstTurnBonusEnergy > 0){
         state.energy += state.firstTurnBonusEnergy;
         log(`⏳ 首回合額外 +${state.firstTurnBonusEnergy} 能量`);
@@ -331,10 +348,13 @@ function draw(n){
 function startTurn(){
     if(!state.enemy) return;
     if(state.firstTurnOfBattle){
+        // 第一回合不重置能量（能量已在 spawnEnemy 中設定好）
         state.firstTurnOfBattle = false;
     } else {
+        // 非第一回合，重置能量為最大值
         state.energy = state.maxEnergy;
     }
+    // 護甲重置
     state.block = 0;
     if(state.job==="mage") draw(6); else draw(5);
     for(let r of state.relics) if(r.turnStart) r.turnStart();
@@ -484,36 +504,41 @@ function openShop(){
     document.getElementById("shopGold").innerText=state.gold;
     let area=document.getElementById("shopCards");
     area.innerHTML="";
-    let allAvailable=[...getNormalCards(),...getUnlockedCardObjects()];
-    if(allAvailable.length===0){ area.innerHTML="<div class='small'>暫無可購買卡牌</div>"; return; }
-    let shuffled=shuffle([...allAvailable]);
-    let selected=[];
+    let allAvailable = [...getNormalCards(), ...getUnlockedCardObjects()];
+    if(allAvailable.length===0){
+        area.innerHTML="<div class='small'>暫無可購買卡牌</div>";
+        return;
+    }
+    let shuffled = shuffle([...allAvailable]);
+    let selected = [];
     for(let i=0; i<shuffled.length && selected.length<3; i++){
-        let card=shuffled[i];
-        if(!selected.some(c=>c.name===card.name)) selected.push(card);
+        let card = shuffled[i];
+        if(!selected.some(c=>c.name===card.name)){
+            selected.push(card);
+        }
     }
     selected.forEach(card=>{
         let div=document.createElement("div");
         div.className=`card ${card.rarity}`;
         div.setAttribute("title", getCardTooltip(card));
         let basePrice;
-        if(state.unlockedCardNames.includes(card.name)){
-            let originalCard=drawOnlyCardPool.find(c=>c.name===card.name);
-            basePrice=originalCard?originalCard.price:60;
+        if (state.unlockedCardNames.includes(card.name)) {
+            const originalCard = drawOnlyCardPool.find(c => c.name === card.name);
+            basePrice = originalCard ? originalCard.price : 60;
         } else {
-            basePrice=30+card.cost*10;
+            basePrice = 30 + card.cost * 10;
         }
-        let finalPrice=Math.floor(basePrice*(state.shopDiscount||1));
-        if(finalPrice<1) finalPrice=1;
-        div.innerHTML=cardHtml(card)+`<div style="margin-top:10px"><button class="btn">購買 ${finalPrice} 石</button></div>`;
-        div.onclick=()=>{
-            if(state.gold<finalPrice){ log("💰 魂石不足"); return; }
-            state.gold-=finalPrice;
-            if(state.unlockedCardNames.includes(card.name)){
-                let idx=state.unlockedCardNames.indexOf(card.name);
-                if(idx!==-1) state.unlockedCardNames.splice(idx,1);
-                log(`✨ 購買解鎖卡：${card.name}，已加入牌組`);
-            } else { log(`🛒 購買一般卡：${card.name}`); }
+        let finalPrice = Math.floor(basePrice * (state.shopDiscount || 1));
+        if(finalPrice < 1) finalPrice=1;
+        div.innerHTML = cardHtml(card) + `<div style="margin-top:10px"><button class="btn">購買 ${finalPrice} 石</button></div>`;
+        div.onclick = () => {
+            if(state.gold < finalPrice){ log("💰 魂石不足"); return; }
+            state.gold -= finalPrice;
+            if (state.unlockedCardNames.includes(card.name)) {
+                log(`✨ 購買解鎖卡：${card.name}，已加入牌組（可再次購買）`);
+            } else {
+                log(`🛒 購買一般卡：${card.name}`);
+            }
             state.deck.push(card);
             openShop();
             render();
@@ -584,10 +609,10 @@ function openBlackMarket(){
             if(state.gold<finalPrice){ log("💰 魂石不足"); return; }
             state.gold-=finalPrice;
             if(state.unlockedCardNames.includes(card.name)){
-                let idx=state.unlockedCardNames.indexOf(card.name);
-                if(idx!==-1) state.unlockedCardNames.splice(idx,1);
-                log(`💰 奸商：購買解鎖卡 ${card.name}，已加入牌組（三倍價格）`);
-            } else { log(`💰 奸商：購買一般卡 ${card.name}，三倍價格`); }
+                log(`💰 奸商：購買解鎖卡 ${card.name}，已加入牌組（可再次購買）`);
+            } else {
+                log(`💰 奸商：購買一般卡 ${card.name}，三倍價格`);
+            }
             state.deck.push(card);
             openBlackMarket();
             render();
@@ -611,7 +636,7 @@ function drawSingle(){
     if(!newCard){ log("✨ 你已經解鎖了所有抽卡池的卡牌！無需再抽"); return; }
     state.gold-=100;
     if(!state.unlockedCardNames.includes(newCard.name)) state.unlockedCardNames.push(newCard.name);
-    log(`✨ 抽卡獲得全新卡牌：${newCard.name}（${rarityText(newCard.rarity)}），已解鎖購買資格，將出現在商店中，價格 ${newCard.price} 石`);
+    log(`✨ 抽卡獲得全新卡牌：${newCard.name}（${rarityText(newCard.rarity)}），已解鎖購買資格，將出現在商店中，價格 ${newCard.price} 石（可重複購買）`);
     let resultArea=document.getElementById("drawResultArea");
     resultArea.innerHTML="";
     let cardDiv=document.createElement("div");
@@ -619,6 +644,7 @@ function drawSingle(){
     cardDiv.setAttribute("title", getCardTooltip(newCard));
     cardDiv.innerHTML=`<div class="energy">${newCard.cost}</div><div style="font-weight:bold; margin-top:8px;">${newCard.name}</div><div class="small">${rarityText(newCard.rarity)}</div><div class="small" style="margin-top:6px;">${newCard.desc}</div><div class="small" style="margin-top:8px;">🛒 商店價格: ${newCard.price}</div>`;
     resultArea.appendChild(cardDiv);
+    cardDiv.style.animation = "cardPop 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards";
     document.getElementById("drawGold").innerText=state.gold;
     render();
 }
@@ -634,14 +660,16 @@ function drawTen(){
     }
     if(newCards.length===0){ log("✨ 你已經解鎖了所有抽卡池的卡牌！無需再抽"); return; }
     state.gold-=980;
-    log(`🌟 十連抽！獲得 ${newCards.length} 張全新卡牌：${newCards.map(c=>c.name).join(", ")}，已解鎖購買資格，將出現在商店中`);
+    log(`🌟 十連抽！獲得 ${newCards.length} 張全新卡牌：${newCards.map(c=>c.name).join(", ")}，已解鎖購買資格，將出現在商店中（可重複購買）`);
     let resultArea=document.getElementById("drawResultArea");
     resultArea.innerHTML="";
-    newCards.forEach(card=>{
+    newCards.forEach((card, idx)=>{
         let cardDiv=document.createElement("div");
         cardDiv.className=`result-card ${card.rarity}`;
         cardDiv.setAttribute("title", getCardTooltip(card));
         cardDiv.innerHTML=`<div class="energy">${card.cost}</div><div style="font-weight:bold; margin-top:8px;">${card.name}</div><div class="small">${rarityText(card.rarity)}</div><div class="small" style="margin-top:6px;">${card.desc}</div><div class="small" style="margin-top:8px;">🛒 商店價格: ${card.price}</div>`;
+        cardDiv.style.animation = `cardPop 0.25s ease-out ${idx * 0.05}s forwards`;
+        cardDiv.style.opacity = "0";
         resultArea.appendChild(cardDiv);
     });
     document.getElementById("drawGold").innerText=state.gold;
@@ -700,11 +728,11 @@ function render(){
     document.getElementById("jobAssassin").disabled=started;
 }
 function saveGame(){
-    localStorage.setItem("abyss_rune_strength_persist",JSON.stringify(state));
+    localStorage.setItem("abyss_rune_energy_relic_fixed",JSON.stringify(state));
     log("💾 已存檔");
 }
 function loadGame(){
-    let raw=localStorage.getItem("abyss_rune_strength_persist");
+    let raw=localStorage.getItem("abyss_rune_energy_relic_fixed");
     if(!raw){ log("❌ 沒有存檔"); return; }
     state=JSON.parse(raw);
     state.relics=state.relics.map(saved=>{ let original=relicPool.find(r=>r.name===saved.name); return original||saved; });
@@ -717,7 +745,7 @@ function loadGame(){
 }
 setJob("warrior");
 render();
-log("🌌 深淵符文啟動 | 力量永久保留版（跨戰鬥不重置）");
+log("🌌 深淵符文啟動");
 </script>
 </body>
 </html>
