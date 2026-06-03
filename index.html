@@ -539,7 +539,24 @@ function gainRelic(){
     );
 
     render();
-}function showCardReward(){
+}
+// ================= 卡牌浮動提示（Tooltip） =================
+function getCardTooltip(card){
+    let lines = [];
+    lines.push(`${card.name} (${rarityText(card.rarity)})`);
+    lines.push(`費用: ${card.cost}`);
+    if(card.dmg) lines.push(`傷害: ${card.dmg}`);
+    if(card.block) lines.push(`護甲: ${card.block}`);
+    if(card.heal) lines.push(`治療: ${card.heal}`);
+    if(card.hits) lines.push(`攻擊次數: ${card.hits}`);
+    if(card.poison) lines.push(`中毒: ${card.poison}`);
+    if(card.strength) lines.push(`力量: ${card.strength}`);
+    if(card.gain) lines.push(`獲得能量: ${card.gain}`);
+    if(card.draw) lines.push(`抽牌: ${card.draw}`);
+    lines.push(card.desc);
+    return lines.join("\n");
+}
+function showCardReward(){
 let modal=document.getElementById("rewardModal");
 let area=document.getElementById("rewardCards");
 area.innerHTML="";
@@ -549,6 +566,7 @@ for(let i=0;i<3;i++) rewards.push(copyCard(pool[Math.floor(Math.random()*pool.le
 rewards.forEach(card=>{
 let div=document.createElement("div");
 div.className=`card ${card.rarity}`;
+div.setAttribute("title", getCardTooltip(card));
 div.innerHTML=cardHtml(card);
 div.onclick=()=>{ state.deck.push(card); log(`🎴 獲得卡牌：${card.name}`); modal.style.display="none"; render(); };
 area.appendChild(div);
@@ -592,6 +610,7 @@ for(let i=0; i<shuffled.length && selected.length<3; i++){
 selected.forEach(card=>{
 let div=document.createElement("div");
 div.className=`card ${card.rarity}`;
+div.setAttribute("title", getCardTooltip(card));
 let basePrice;
 if (state.unlockedCardNames.includes(card.name)) {
     const originalCard = drawOnlyCardPool.find(c => c.name === card.name);
@@ -630,6 +649,7 @@ area.innerHTML="";
 state.deck.forEach((card,idx)=>{
 let div=document.createElement("div");
 div.className=`card ${card.rarity}`;
+div.setAttribute("title", getCardTooltip(card));
 div.innerHTML=cardHtml(card);
 div.onclick=()=>{ log(`🗑️ 移除 ${card.name}`); state.deck.splice(idx,1); closeDeckView(); openShop(); render(); };
 area.appendChild(div);
@@ -643,6 +663,7 @@ area.innerHTML="";
 state.deck.forEach(card=>{
 let div=document.createElement("div");
 div.className=`card ${card.rarity}`;
+div.setAttribute("title", getCardTooltip(card));
 div.innerHTML=cardHtml(card);
 area.appendChild(div);
 });
@@ -672,6 +693,7 @@ function openBlackMarket(){
     selected.forEach(card=>{
         let div = document.createElement("div");
         div.className = `card ${card.rarity}`;
+        div.setAttribute("title", getCardTooltip(card));
         let basePrice;
         if (state.unlockedCardNames.includes(card.name)) {
             const originalCard = drawOnlyCardPool.find(c => c.name === card.name);
@@ -730,6 +752,7 @@ function drawSingle(){
     resultArea.innerHTML = "";
     let cardDiv = document.createElement("div");
     cardDiv.className = `result-card ${newCard.rarity}`;
+    cardDiv.setAttribute("title", getCardTooltip(newCard));
     cardDiv.innerHTML = `<div class="energy">${newCard.cost}</div><div style="font-weight:bold; margin-top:8px;">${newCard.name}</div><div class="small">${rarityText(newCard.rarity)}</div><div class="small" style="margin-top:6px;">${newCard.desc}</div><div class="small" style="margin-top:8px;">🛒 商店價格: ${newCard.price}</div>`;
     resultArea.appendChild(cardDiv);
     document.getElementById("drawGold").innerText = state.gold;
@@ -755,6 +778,7 @@ function drawTen(){
     newCards.forEach(card=>{
         let cardDiv = document.createElement("div");
         cardDiv.className = `result-card ${card.rarity}`;
+        cardDiv.setAttribute("title", getCardTooltip(card));
         cardDiv.innerHTML = `<div class="energy">${card.cost}</div><div style="font-weight:bold; margin-top:8px;">${card.name}</div><div class="small">${rarityText(card.rarity)}</div><div class="small" style="margin-top:6px;">${card.desc}</div><div class="small" style="margin-top:8px;">🛒 商店價格: ${card.price}</div>`;
         resultArea.appendChild(cardDiv);
     });
@@ -784,7 +808,9 @@ document.getElementById("discardCount").innerText=state.discard.length;
 document.getElementById("jobInfo").innerText=state.job==="warrior"?"戰士：+20最大生命":state.job==="mage"?"法師：+1能量，每回合抽6張":"刺客：20%暴擊";
 document.getElementById("playerHpFill").style.width=(state.hp/state.maxHp*100)+"%";
 let handHtml="";
-state.hand.forEach((card,i)=>{ handHtml+=`<div class="card ${card.rarity}" onclick="playCard(${i})">${cardHtml(card)}</div>`; });
+state.hand.forEach((card,i)=>{
+    handHtml+=`<div class="card ${card.rarity}" title="${getCardTooltip(card).replace(/"/g, '&quot;')}" onclick="playCard(${i})">${cardHtml(card)}</div>`;
+});
 document.getElementById("hand").innerHTML=handHtml||"沒有手牌";
 let mapHtml="";
 state.map.forEach((n,i)=>{ mapHtml+=`<div class="node ${n.done?'done':''}" onclick="enterNode(${i})">${n.type}</div>`; });
@@ -819,7 +845,8 @@ function loadGame(){
     render();
 
     log("📀 讀取完成");
-}setJob("warrior");
+}
+setJob("warrior");
 render();
 log("🌌 深淵符文啟動");
 </script>
