@@ -203,33 +203,94 @@ const drawOnlyCardPool = [
 
 // ================= 遺物池（新增多種，按稀有度權重）=================
 const relicPool = [
-// 普通遺物 (權重高)
-{name:"尖刺護甲",desc:"被攻擊時反傷20%",rarity:"common",weight:8,
- effect(type,dmg){if(type==="hit"&&state.enemy){let thorns=Math.max(1,Math.floor(dmg*.2));state.enemy.hp-=thorns;log(`🩸 尖刺護甲反傷 ${thorns}`);}}},
-{name:"遠古卷軸",desc:"每回合額外抽1張牌",rarity:"common",weight:8,
- turnStart(){draw(1);}},
-{name:"力量護符",desc:"戰鬥開始時獲得2力量",rarity:"common",weight:8,
- battleStart(){state.strength+=2;log("💪 力量護符 +2 力量");}},
-{name:"生命水晶",desc:"最大生命+10",rarity:"common",weight:8,
- onGet(){state.maxHp+=10;state.hp+=10;log("❤️ 最大生命 +10");}},
-// 稀有遺物 (權重中)
-{name:"魔力核心",desc:"每場戰鬥開始時 +1 能量",rarity:"rare",weight:3,
- battleStart(){state.energy+=1;}},
-{name:"鮮血戒指",desc:"攻擊後恢復2生命",rarity:"rare",weight:3,
- effect(type){if(type==="attack"){heal(2);}}},
-{name:"毒蛇雕像",desc:"每回合開始時對敵人施加1中毒",rarity:"rare",weight:3,
- effect(){if(state.enemy){state.enemy.poison+=1;log("🐍 毒蛇雕像施加1中毒");}}},
-{name:"幸運幣",desc:"商店價格降低10%",rarity:"rare",weight:3,
- onGet(){state.shopDiscount=0.9;log("💰 商店價格 -10%");}},
-// 史詩遺物 (權重低)
-{name:"龍心",desc:"最大生命+25",rarity:"epic",weight:1,
- onGet(){state.maxHp+=25;state.hp+=25;log("❤️ 龍心 +25 最大生命");}},
-{name:"風暴披風",desc:"每回合開始時獲得3護甲",rarity:"epic",weight:1,
- turnStart(){state.block+=3;log("🌬️ 風暴披風 +3 護甲");}},
-{name:"時間沙漏",desc:"首回合能量+2",rarity:"epic",weight:1,
- battleStart(){state.energy+=2;log("⏳ 時間沙漏 +2 能量");}}
-];
 
+{name:"尖刺護甲",desc:"被攻擊時反傷20%",rarity:"common",weight:8,
+effect(type,dmg){
+    if(type==="hit"&&state.enemy){
+        let thorns=Math.max(1,Math.floor(dmg*0.2));
+        state.enemy.hp-=thorns;
+        log(`🩸 尖刺護甲反傷 ${thorns}`);
+    }
+}
+},
+
+{name:"遠古卷軸",desc:"每回合額外抽1張牌",rarity:"common",weight:8,
+turnStart(){
+    draw(1);
+}
+},
+
+{name:"力量護符",desc:"戰鬥開始時獲得2力量",rarity:"common",weight:8,
+battleStart(){
+    state.strength+=2;
+    log("💪 力量護符 +2 力量");
+}
+},
+
+{name:"生命水晶",desc:"最大生命+10",rarity:"common",weight:8,
+onGet(){
+    state.maxHp+=10;
+    state.hp+=10;
+    log("❤️ 最大生命 +10");
+}
+},
+
+{name:"魔力核心",desc:"最大能量 +1",rarity:"rare",weight:3,
+onGet(){
+    state.maxEnergy+=1;
+},
+battleStart(){
+    state.energy=state.maxEnergy;
+}
+},
+
+{name:"鮮血戒指",desc:"攻擊後恢復2生命",rarity:"rare",weight:3,
+effect(type){
+    if(type==="attack"){
+        heal(2);
+    }
+}
+},
+
+{name:"毒蛇雕像",desc:"每回合開始時對敵人施加1中毒",rarity:"rare",weight:3,
+turnStart(){
+    if(state.enemy){
+        state.enemy.poison+=1;
+        log("🐍 毒蛇雕像施加1中毒");
+    }
+}
+},
+
+{name:"幸運幣",desc:"商店價格降低10%",rarity:"rare",weight:3,
+onGet(){
+    state.shopDiscount=0.9;
+    log("💰 商店價格 -10%");
+}
+},
+
+{name:"龍心",desc:"最大生命+25",rarity:"epic",weight:1,
+onGet(){
+    state.maxHp+=25;
+    state.hp+=25;
+    log("❤️ 龍心 +25 最大生命");
+}
+},
+
+{name:"風暴披風",desc:"每回合開始時獲得3護甲",rarity:"epic",weight:1,
+turnStart(){
+    state.block+=3;
+    log("🌬️ 風暴披風 +3 護甲");
+}
+},
+
+{name:"時間沙漏",desc:"每場戰鬥首回合 +2 能量",rarity:"epic",weight:1,
+battleStart(){
+    state.energy+=2;
+    log("⏳ 首回合額外 +2 能量");
+}
+}
+
+];
 let state = {
 hp:80,maxHp:80,energy:3,maxEnergy:3,block:0,gold:60,floor:1,job:"warrior",
 strength:0,poison:0,deck:[],hand:[],discard:[],enemy:null,map:[],relics:[],
@@ -264,9 +325,9 @@ return shuffle(deck);
 
 function setJob(job){
 state.job=job;
-state.maxHp=80; state.maxEnergy=3;
-if(job==="warrior") state.maxHp=100;
-if(job==="mage") state.maxEnergy=4;
+state.maxHp=100; state.maxEnergy=4;
+if(job==="warrior") state.maxHp=120;
+if(job==="mage") state.maxEnergy=5;
 state.hp=state.maxHp; state.energy=state.maxEnergy;
 state.block=0; state.strength=0; state.poison=0;
 state.relics=[]; state.unlockedCardNames=[];
@@ -276,10 +337,41 @@ generateMap(); render();
 log(`🎭 選擇職業：${job}`);
 }
 function generateMap(){
-state.map=[];
-const types=["戰鬥","戰鬥","精英","休息","寶箱","商店"];
-for(let i=0;i<6;i++){ let type=types[Math.floor(Math.random()*types.length)]; state.map.push({type,done:false}); }
-if(state.floor%5===0){ let idx=Math.floor(Math.random()*state.map.length); state.map[idx]={type:"Boss",done:false}; }
+
+    state.map = [
+
+        {type:"戰鬥",done:false},
+        {type:"戰鬥",done:false},
+
+        {type:"精英",done:false},
+
+        {type:"商店",done:false},
+
+        {
+            type:Math.random()<0.5 ? "休息" : "寶箱",
+            done:false
+        },
+
+        {
+            type:Math.random()<0.5 ? "休息" : "寶箱",
+            done:false
+        }
+
+    ];
+
+    // 每5層必有Boss
+    if(state.floor % 5 === 0){
+
+        let replaceIndex =
+        Math.floor(Math.random()*state.map.length);
+
+        state.map[replaceIndex] = {
+            type:"Boss",
+            done:false
+        };
+    }
+
+    state.map = shuffle(state.map);
 }
 function enterNode(i){
 let node=state.map[i]; if(node.done)return; node.done=true;
@@ -320,7 +412,17 @@ if(state.deck.length) state.hand.push(state.deck.shift());
 }
 function startTurn(){
 if(!state.enemy)return;
-state.energy=state.maxEnergy; state.block=0;
+
+// 每回合重置能量
+state.energy = state.maxEnergy;
+
+// 護甲重置
+state.block = 0;
+
+if(!state.turnCount)
+    state.turnCount = 1;
+else
+    state.turnCount++;
 if(state.job==="mage") draw(6); else draw(5);
 for(let r of state.relics) if(r.turnStart) r.turnStart();
 for(let r of state.relics) if(r.effect) r.effect();
@@ -398,26 +500,46 @@ render();
 }
 // ================= 加權遺物掉落（僅從寶箱觸發）=================
 function gainRelic(){
-    let available = relicPool.filter(r => !state.relics.some(ex => ex.name === r.name));
+
+    let available = relicPool.filter(
+        r => !state.relics.some(ex => ex.name === r.name)
+    );
+
     if(available.length===0) return;
-    let totalWeight = available.reduce((sum, r) => sum + (r.weight || 1), 0);
-    let rand = Math.random() * totalWeight;
-    let accum = 0;
-    let selected = null;
+
+    let totalWeight = available.reduce(
+        (sum,r)=>sum+(r.weight||1),0
+    );
+
+    let rand=Math.random()*totalWeight;
+
+    let accum=0;
+    let selected=null;
+
     for(let r of available){
-        accum += (r.weight || 1);
-        if(rand <= accum){
-            selected = r;
+        accum+=(r.weight||1);
+
+        if(rand<=accum){
+            selected=r;
             break;
         }
     }
-    if(!selected) selected = available[0];
-    let newRelic = JSON.parse(JSON.stringify(selected));
+
+    if(!selected) selected=available[0];
+
+    let newRelic=selected;
+
     state.relics.push(newRelic);
-    if(newRelic.onGet) newRelic.onGet();
-    log(`🧿 獲得遺物：${newRelic.name}（${newRelic.rarity}）`);
-}
-function showCardReward(){
+
+    if(newRelic.onGet)
+        newRelic.onGet();
+
+    log(
+      `🧿 獲得遺物：${newRelic.name}（${newRelic.rarity}）`
+    );
+
+    render();
+}function showCardReward(){
 let modal=document.getElementById("rewardModal");
 let area=document.getElementById("rewardCards");
 area.innerHTML="";
@@ -675,8 +797,29 @@ state.relics.forEach(r=>{ relicHtml+=`<div class="relic"><div><b>${r.name}</b></
 document.getElementById("relics").innerHTML=relicHtml||"無";
 }
 function saveGame(){ localStorage.setItem("abyss_rune_chest_relics",JSON.stringify(state)); log("💾 已存檔"); }
-function loadGame(){ let raw=localStorage.getItem("abyss_rune_chest_relics"); if(!raw){ log("❌ 沒有存檔"); return; } state=JSON.parse(raw); render(); log("📀 讀取完成"); }
-setJob("warrior");
+function loadGame(){
+
+    let raw =
+    localStorage.getItem("abyss_rune_chest_relics");
+
+    if(!raw){
+        log("❌ 沒有存檔");
+        return;
+    }
+
+    state = JSON.parse(raw);
+
+    state.relics = state.relics.map(saved=>{
+        let original =
+        relicPool.find(r=>r.name===saved.name);
+
+        return original || saved;
+    });
+
+    render();
+
+    log("📀 讀取完成");
+}setJob("warrior");
 render();
 log("🌌 深淵符文啟動");
 </script>
