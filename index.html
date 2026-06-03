@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>深淵符文:終焉高塔</title>
+<title>深淵符文:終焉高塔 | 力量永久保留版</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;user-select:none;}
 body{background:#05070d;color:#e6ffe6;font-family:"Segoe UI","Noto Sans TC",sans-serif;overflow:hidden;}
@@ -114,7 +114,7 @@ h2,h3{margin:8px 0;}
 </div>
 </div>
 
-<!-- 其餘模態框 (省略，與之前相同) -->
+<!-- 其他模態框 (省略，與之前相同) -->
 <div class="modal" id="shopModal"><div class="modal-content"><h2>🛒 商店</h2><div>魂石：<span id="shopGold"></span></div><div id="shopCards" class="shop-grid"></div><div style="margin-top:18px"><button class="btn" onclick="healShop()">❤️ 回復30HP（25）</button><button class="btn" onclick="removeCardShop()">🗑️ 刪除卡牌（35）</button><button class="btn" onclick="closeShop()">離開商店</button></div></div></div>
 <div class="modal" id="blackMarketModal"><div class="modal-content"><h2>💰 奸商（三倍價格）</h2><p class="small">戰鬥中也可購買，立即加入牌組</p><div>魂石：<span id="blackGold"></span></div><div id="blackCards" class="shop-grid"></div><button class="btn" onclick="closeBlackMarket()">關閉</button></div></div>
 <div class="modal" id="rewardModal"><div class="modal-content"><h2>🎁 選擇一張卡牌</h2><div id="rewardCards" class="reward-grid"></div></div></div>
@@ -122,12 +122,12 @@ h2,h3{margin:8px 0;}
 <div class="modal" id="drawModal"><div class="modal-content"><h2>✨ 抽卡系統</h2><p>魂石：<span id="drawGold"></span></p><p class="small">抽卡會解鎖一張全新卡牌，解鎖後將出現在商店（與一般商品混合），需再花費魂石購買（每張卡獨立定價）</p><div style="display:flex; gap:12px; margin:16px 0;"><button class="btn" onclick="drawSingle()">單抽 100 石</button><button class="btn" onclick="drawTen()">十連抽 980 石</button></div><div id="drawResultArea" class="reward-grid" style="margin-top:12px;"></div><button class="btn" onclick="closeDrawModal()">關閉</button></div></div>
 
 <script>
-// ================= 基礎卡池 (同之前，為節省篇幅此處省略部分，實際完整版會保留全部) =================
+// ================= 基礎卡池 =================
 const baseCardPool = [
 {name:"打擊",type:"atk",dmg:6,cost:1,rarity:"common",desc:"造成6傷害"},
 {name:"防禦",type:"block",block:6,cost:1,rarity:"common",desc:"獲得6護甲"},
 {name:"集中",type:"energy",gain:1,draw:1,cost:0,rarity:"rare",once:true,desc:"+1能量 抽1張"},
-{name:"毒刃",type:"poison",dmg:5,poison:3,cost:1,rarity:"rare",desc:"造成5傷害並施加3中毒"}
+{name:"毒刃",type:"poison",dmg:5,poison:6,cost:1,rarity:"rare",desc:"造成5傷害並施加6中毒"}
 ];
 const existingExtraCardPool = [
 {name:"重擊",type:"atk",dmg:14,cost:2,rarity:"rare",desc:"造成14傷害"},
@@ -157,15 +157,18 @@ const drawOnlyCardPool = [
 const relicPool = [
 {name:"尖刺護甲",desc:"被攻擊時反傷20%",rarity:"common",weight:8, effect(type,dmg){if(type==="hit"&&state.enemy){let thorns=Math.max(1,Math.floor(dmg*0.2));state.enemy.hp-=thorns;log(`🩸 尖刺護甲反傷 ${thorns}`);}}},
 {name:"遠古卷軸",desc:"每回合額外抽1張牌",rarity:"common",weight:8, turnStart(){draw(1);}},
-{name:"力量護符",desc:"戰鬥開始時獲得2力量",rarity:"common",weight:8, battleStart(){state.strength+=2;log("💪 力量護符 +2 力量");}},
+{name:"力量護符",desc:"永久獲得2力量",rarity:"common",weight:8, onGet(){state.strength+=2;log("💪 力量護符 +2 力量");}},  // 改為永久增加
 {name:"生命水晶",desc:"最大生命+10",rarity:"common",weight:8, onGet(){state.maxHp+=10;state.hp+=10;log("❤️ 最大生命 +10");}},
-{name:"魔力核心",desc:"最大能量 +1",rarity:"rare",weight:3, onGet(){state.maxEnergy+=1;}, battleStart(){state.energy=state.maxEnergy;}},
-{name:"鮮血戒指",desc:"攻擊後恢復10生命",rarity:"rare",weight:3, effect(type){if(type==="attack"){heal(2);}}},
-{name:"毒蛇雕像",desc:"每回合開始時對敵人施加50中毒",rarity:"rare",weight:3, turnStart(){if(state.enemy){state.enemy.poison+=1;log("🐍 毒蛇雕像施加50中毒");}}},
+{name:"魔力核心",desc:"最大能量 +1",rarity:"rare",weight:3,
+ onGet(){state.maxEnergy++; log("✨ 最大能量 +1");},
+ battleStart(){}},
+{name:"鮮血戒指",desc:"攻擊後恢復10生命",rarity:"rare",weight:3, effect(type){if(type==="attack"){heal(10);}}},
+{name:"毒蛇雕像",desc:"每回合開始時對敵人施加3中毒",rarity:"rare",weight:3, turnStart(){if(state.enemy){state.enemy.poison+=3;log("🐍 毒蛇雕像施加3中毒");}}},
 {name:"幸運幣",desc:"商店價格降低10%",rarity:"rare",weight:3, onGet(){state.shopDiscount=0.9;log("💰 商店價格 -10%");}},
 {name:"龍心",desc:"最大生命+25",rarity:"epic",weight:1, onGet(){state.maxHp+=25;state.hp+=25;log("❤️ 龍心 +25 最大生命");}},
 {name:"風暴披風",desc:"每回合開始時獲得3護甲",rarity:"epic",weight:1, turnStart(){state.block+=3;log("🌬️ 風暴披風 +3 護甲");}},
-{name:"時間沙漏",desc:"每場戰鬥首回合 +2 能量",rarity:"epic",weight:1, battleStart(){state.energy+=2;log("⏳ 首回合額外 +2 能量");}}
+{name:"時間沙漏",desc:"每場戰鬥首回合 +2 能量",rarity:"epic",weight:1,
+ battleStart(){state.firstTurnBonusEnergy = (state.firstTurnBonusEnergy || 0) + 2; log("⏳ 首回合額外 +2 能量");}}
 ];
 
 let state = {
@@ -173,7 +176,9 @@ hp:80,maxHp:80,energy:3,maxEnergy:3,block:0,gold:60,floor:1,job:"warrior",
 strength:0,poison:0,deck:[],hand:[],discard:[],enemy:null,map:[],relics:[],
 inBattle:false,usedOnceCards:[],unlockedCardNames:[],shopDiscount:1,
 evolutionPoints:0,evolved:false,permanentStrength:0,
-gameStarted:false   // 新增標誌，遊戲是否已開始
+gameStarted:false,
+firstTurnBonusEnergy:0,
+firstTurnOfBattle:true
 };
 
 function copyCardFromPool(pool,name){ let c=pool.find(x=>x.name===name); return JSON.parse(JSON.stringify(c)); }
@@ -218,13 +223,13 @@ function setJob(job){
     state.evolved=false;
     state.evolutionPoints=0;
     state.permanentStrength=0;
+    state.strength = 0;  // 重置力量
     let {baseHp, baseEnergy}=applyEvolution();
     state.maxHp=baseHp;
     state.maxEnergy=baseEnergy;
     state.hp=state.maxHp;
     state.energy=state.maxEnergy;
     state.block=0;
-    state.strength=state.permanentStrength;
     state.poison=0;
     state.relics=[];
     state.unlockedCardNames=[];
@@ -242,7 +247,11 @@ function evolveJob(){
     if(state.evolutionPoints<=0){ log("沒有進化點數，擊敗30層後的Boss可獲得"); return; }
     state.evolved=true;
     state.evolutionPoints--;
-    if(state.job==="assassin"){ state.permanentStrength=20; state.strength=state.permanentStrength; }
+    if(state.job==="assassin"){
+        state.permanentStrength = 20;
+        state.strength += 20;  // 永久增加力量
+        log("🗡️ 刺客進化：永久力量 +20");
+    }
     let {baseHp, baseEnergy}=applyEvolution();
     state.maxHp=baseHp;
     state.maxEnergy=baseEnergy;
@@ -267,10 +276,9 @@ function generateMap(){
 function enterNode(i){
     let node=state.map[i]; if(node.done) return;
     node.done=true;
-    // 首次進入節點時標記遊戲已開始
     if(!state.gameStarted){
         state.gameStarted=true;
-        render(); // 重新渲染以禁用職業按鈕
+        render();
     }
     switch(node.type){
         case "戰鬥": spawnEnemy("normal"); break;
@@ -295,8 +303,16 @@ function spawnEnemy(rank){
     if(rank==="boss"){ hp*=3; atk*=2.2; }
     state.enemy={name:rank==="boss"?"終焉魔王":rank==="elite"?"深淵精英":"深淵怪物",rank,hp:Math.floor(hp),maxHp:Math.floor(hp),atk:Math.floor(atk),poison:0,vulnerable:0,rage:false};
     state.hand=[]; state.discard=[]; state.deck=shuffle(state.deck); state.usedOnceCards=[];
-    state.strength=state.permanentStrength;
+    // 力量保留，不重置！
+    // state.strength = state.permanentStrength;  // 這行已刪除，力量跨戰鬥保留
+    state.firstTurnOfBattle = true;
+    state.firstTurnBonusEnergy = 0;
+    state.energy = state.maxEnergy;
     for(let r of state.relics) if(r.battleStart) r.battleStart();
+    if(state.firstTurnBonusEnergy > 0){
+        state.energy += state.firstTurnBonusEnergy;
+        log(`⏳ 首回合額外 +${state.firstTurnBonusEnergy} 能量`);
+    }
     if(state.evolved && state.job==="mage"){ state.block+=30; log("🔮 法師進化：獲得30護盾"); }
     log(`⚔️ 遭遇 ${state.enemy.name}`);
     startTurn();
@@ -314,8 +330,12 @@ function draw(n){
 }
 function startTurn(){
     if(!state.enemy) return;
-    state.energy=state.maxEnergy;
-    state.block=0;
+    if(state.firstTurnOfBattle){
+        state.firstTurnOfBattle = false;
+    } else {
+        state.energy = state.maxEnergy;
+    }
+    state.block = 0;
     if(state.job==="mage") draw(6); else draw(5);
     for(let r of state.relics) if(r.turnStart) r.turnStart();
     for(let r of state.relics) if(r.effect) r.effect();
@@ -347,7 +367,7 @@ function playCard(i){
         case "energy": state.energy+=card.gain; draw(card.draw); log(`⚡ +${card.gain} 能量`); break;
         case "vul": state.enemy.vulnerable+=card.vulnerable; log(`💥 敵人易傷 ${card.vulnerable}`); break;
         case "buff": state.strength+=card.strength; log(`💪 力量 +${card.strength}`); break;
-        case "poisonburst": let dmg=(state.enemy.poison||0)*2; state.enemy.hp-=dmg; state.enemy.poison=0; log(`💣 毒爆造成 ${dmg} 傷害，中毒清除`); break;
+        case "poisonburst": let dmg=(state.enemy.poison||0)*3; state.enemy.hp-=dmg; state.enemy.poison=0; log(`💣 毒爆造成 ${dmg} 傷害，中毒清除`); break;
         case "percentdmg": let percentDmg=Math.floor(state.enemy.maxHp*card.percent); state.enemy.hp-=percentDmg; log(`🌑 深淵降臨造成 ${percentDmg} 傷害`); break;
         case "fullheal": state.hp=state.maxHp; log(`❤️ 生命已回滿`); let targetHandSize=10; while(state.hand.length<targetHandSize && (state.deck.length>0||state.discard.length>0)) draw(1); log(`🃏 抽滿手牌`); break;
         case "lifesteal": dealDamage(card.dmg); heal(card.heal); log(`🩸 恢復 ${card.heal} HP`); break;
@@ -455,7 +475,7 @@ function die(){
     log("💀 你死亡了");
     state.floor=1;
     state.gold=60;
-    state.gameStarted=false;   // 重置遊戲開始標誌，允許重新選職業
+    state.gameStarted=false;
     setJob(state.job);
 }
 function openShop(){
@@ -674,29 +694,30 @@ function render(){
     let relicHtml="";
     state.relics.forEach(r=>{ relicHtml+=`<div class="relic"><div><b>${r.name}</b></div><div class="small">${r.desc}</div></div>`; });
     document.getElementById("relics").innerHTML=relicHtml||"無";
-    // 根據遊戲是否已開始，禁用職業按鈕
     let started=state.gameStarted;
     document.getElementById("jobWarrior").disabled=started;
     document.getElementById("jobMage").disabled=started;
     document.getElementById("jobAssassin").disabled=started;
 }
 function saveGame(){
-    localStorage.setItem("abyss_rune_evolve_fixed_lock",JSON.stringify(state));
+    localStorage.setItem("abyss_rune_strength_persist",JSON.stringify(state));
     log("💾 已存檔");
 }
 function loadGame(){
-    let raw=localStorage.getItem("abyss_rune_evolve_fixed_lock");
+    let raw=localStorage.getItem("abyss_rune_strength_persist");
     if(!raw){ log("❌ 沒有存檔"); return; }
     state=JSON.parse(raw);
     state.relics=state.relics.map(saved=>{ let original=relicPool.find(r=>r.name===saved.name); return original||saved; });
     if(state.permanentStrength===undefined) state.permanentStrength=0;
     if(state.gameStarted===undefined) state.gameStarted=false;
+    if(state.firstTurnBonusEnergy===undefined) state.firstTurnBonusEnergy=0;
+    if(state.firstTurnOfBattle===undefined) state.firstTurnOfBattle=true;
     render();
     log("📀 讀取完成");
 }
 setJob("warrior");
 render();
-log("🌌 深淵符文啟動 | 職業鎖定（遊戲開始後無法更換）");
+log("🌌 深淵符文啟動 | 力量永久保留版（跨戰鬥不重置）");
 </script>
 </body>
 </html>
